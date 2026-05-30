@@ -165,13 +165,24 @@ const calcBest = (logs) => {
 
 /* ═══════════════════════════ STORAGE ═══════════════════════════ */
 
-useEffect(() => {
-  const all = stor.all();
-  setLogs(all);
-  const td = all[localKey()];
-  if (td) { setHabits(td.habits || {}); setNotes(td.notes || {}); }
-  setReady(true);
-}, []);
+const stor = {
+  async get(k) {
+    try { const r = await window.storage.get(k); return r ? JSON.parse(r.value) : null; }
+    catch { return null; }
+  },
+  async set(k, v) { try { await window.storage.set(k, JSON.stringify(v)); } catch {} },
+  async all() {
+    try {
+      const r = await window.storage.list("log:");
+      if (!r?.keys?.length) return {};
+      const pairs = await Promise.all(r.keys.map(async (k) => {
+        const v = await stor.get(k);
+        return v ? [k.replace("log:", ""), v] : null;
+      }));
+      return Object.fromEntries(pairs.filter(Boolean));
+    } catch { return {}; }
+  },
+};
 
 /* ═══════════════════════════ SCORE RING ═══════════════════════════ */
 
