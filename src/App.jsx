@@ -166,22 +166,23 @@ const calcBest = (logs) => {
 /* ═══════════════════════════ STORAGE ═══════════════════════════ */
 
 const stor = {
-  async get(k) {
-    try { const r = await window.storage.get(k); return r ? JSON.parse(r.value) : null; }
+  get: (k) => {
+    try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; }
     catch { return null; }
   },
-  async set(k, v) { try { await window.storage.set(k, JSON.stringify(v)); } catch {} },
-  async all() {
-    try {
-      const r = await window.storage.list("log:");
-      if (!r?.keys?.length) return {};
-      const pairs = await Promise.all(r.keys.map(async (k) => {
-        const v = await stor.get(k);
-        return v ? [k.replace("log:", ""), v] : null;
-      }));
-      return Object.fromEntries(pairs.filter(Boolean));
-    } catch { return {}; }
+  set: (k, v) => {
+    try { localStorage.setItem(k, JSON.stringify(v)); } catch {}
   },
+  all: () => {
+    const result = {};
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k?.startsWith("log:")) {
+        try { result[k.replace("log:", "")] = JSON.parse(localStorage.getItem(k)); } catch {}
+      }
+    }
+    return result;
+  }
 };
 
 /* ═══════════════════════════ SCORE RING ═══════════════════════════ */
@@ -596,13 +597,11 @@ export default function App() {
 
   // Load all data on mount
   useEffect(() => {
-    (async () => {
-      const all = await stor.all();
-      setLogs(all);
-      const td = all[localKey()];
-      if (td) { setHabits(td.habits || {}); setNotes(td.notes || {}); }
-      setReady(true);
-    })();
+    const all = stor.all();
+    setLogs(all);
+    const td = all[localKey()];
+    if (td) { setHabits(td.habits || {}); setNotes(td.notes || {}); }
+    setReady(true);
   }, []);
 
   // Autosave
