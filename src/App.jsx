@@ -8,26 +8,19 @@ import {
 
 const HABITS = [
   { id: 1, name: "Be Proactive", tag: "Own your responses", gi: 0,
-    desc: "You are responsible for your life. Your behavior is a function of your decisions, not your conditions.",
-    prompt: "Did you choose your response rather than react to circumstances today?" },
+    desc: "You are responsible for your life. Your behavior is a function of your decisions, not your conditions." },
   { id: 2, name: "Begin with the End in Mind", tag: "Define your vision first", gi: 0,
-    desc: "Start every day and task with a clear picture of your desired destination, then use your proactive energy to make it happen.",
-    prompt: "Did you act from a clear sense of purpose and long-term vision today?" },
+    desc: "Start every day and task with a clear picture of your desired destination, then use your proactive energy to make it happen." },
   { id: 3, name: "Put First Things First", tag: "Prioritize what matters most", gi: 0,
-    desc: "The key is not to prioritize your schedule but to schedule your priorities. Focus on what's important, not just urgent.",
-    prompt: "Did you prioritize important things over merely urgent ones today?" },
+    desc: "The key is not to prioritize your schedule but to schedule your priorities. Focus on what's important, not just urgent." },
   { id: 4, name: "Think Win-Win", tag: "Seek mutual benefit always", gi: 1,
-    desc: "Frame every interaction as cooperative, not competitive. Look for solutions that benefit all parties — not at anyone else's expense.",
-    prompt: "Did you approach your interactions seeking mutual benefit today?" },
+    desc: "Frame every interaction as cooperative, not competitive. Look for solutions that benefit all parties — not at anyone else's expense." },
   { id: 5, name: "Seek First to Understand", tag: "Listen before you speak", gi: 1,
-    desc: "Most people listen with intent to reply. Listen instead with genuine intent to understand. Diagnose fully before you prescribe.",
-    prompt: "Did you genuinely listen to understand someone before asserting your view today?" },
+    desc: "Most people listen with intent to reply. Listen instead with genuine intent to understand. Diagnose fully before you prescribe." },
   { id: 6, name: "Synergize", tag: "Create more than the sum of parts", gi: 1,
-    desc: "The whole is greater than its parts. Creative cooperation opens possibilities that no individual could achieve alone.",
-    prompt: "Did you contribute to a collaboration that exceeded what any individual could achieve alone today?" },
+    desc: "The whole is greater than its parts. Creative cooperation opens possibilities that no individual could achieve alone." },
   { id: 7, name: "Sharpen the Saw", tag: "Renew yourself regularly", gi: 2,
-    desc: "Preserve and enhance your greatest asset — you. Invest in renewal across physical, mental, emotional, and spiritual dimensions.",
-    prompt: "Did you invest in renewing yourself physically, mentally, emotionally, or spiritually today?" },
+    desc: "Preserve and enhance your greatest asset — you. Invest in renewal across physical, mental, emotional, and spiritual dimensions." },
 ];
 
 const SUB_HABITS = {
@@ -67,8 +60,7 @@ const SUB_HABITS = {
   ],
 };
 
-const ALL_SUBS = Object.values(SUB_HABITS).flat();
-const TOTAL_SUBS = ALL_SUBS.length;
+const TOTAL_SUBS = Object.values(SUB_HABITS).flat().length;
 const GC = ["#a78bfa", "#fb923c", "#34d399"];
 
 const FAQS = [
@@ -92,6 +84,25 @@ const ONBOARDING_SLIDES = [
   { icon: "✅", title: "Check in every day", body: "Tap a habit card to expand it. Tick the specific actions you actually practised. Your score updates with every tick." },
   { icon: "📈", title: "Watch yourself grow", body: "Track your daily, weekly, and monthly scores, streaks, and long-term trends in the History tab. Let's begin." },
 ];
+
+/* ═══════════════════════════ THEME ═══════════════════════════ */
+
+const makeTheme = (dark) => ({
+  dark,
+  bg:        dark ? "#09090b" : "#f7f7f2",
+  card:      dark ? "#18181b" : "#ffffff",
+  cardInner: dark ? "#09090b" : "#f2f2ed",
+  border:    dark ? "#27272a" : "#e4e4df",
+  divider:   dark ? "#1f1f23" : "#ebebeb",
+  text:      dark ? "#fafafa" : "#0f0f0f",
+  textSub:   dark ? "#e4e4e7" : "#1a1a1a",
+  muted:     dark ? "#a1a1aa" : "#6b6b6b",
+  dim:       dark ? "#52525b" : "#9b9b9b",
+  veryDim:   dark ? "#3f3f46" : "#c8c8c3",
+  inputBg:   dark ? "#09090b" : "#f2f2ed",
+  navBg:     dark ? "rgba(9,9,11,0.97)" : "rgba(247,247,242,0.97)",
+  trackRing: dark ? "#27272a" : "#e4e4df",
+});
 
 /* ═══════════════════════════ HELPERS ═══════════════════════════ */
 
@@ -196,16 +207,13 @@ const scheduleNotif = (timeStr, timerRef) => {
   const next = new Date(now);
   next.setHours(h, m, 0, 0);
   if (next <= now) next.setDate(next.getDate() + 1);
-
   timerRef.current = setTimeout(() => {
     if (typeof Notification !== "undefined" && Notification.permission === "granted") {
       if ("serviceWorker" in navigator) {
         navigator.serviceWorker.ready
           .then((reg) => reg.showNotification("7 Habits Tracker", {
             body: "Time for your daily check-in. How are you living the 7 Habits today?",
-            icon: "/icon-192.png",
-            tag: "daily-reminder",
-            renotify: true,
+            icon: "/icon-192.png", tag: "daily-reminder", renotify: true,
           }))
           .catch(() => new Notification("7 Habits Tracker", { body: "Time for your daily check-in." }));
       } else {
@@ -218,18 +226,18 @@ const scheduleNotif = (timeStr, timerRef) => {
 
 /* ═══════════════════════════ SCORE RING ═══════════════════════════ */
 
-function ScoreRing({ pct, size = 80 }) {
+function ScoreRing({ pct, size = 80, T }) {
   const r = size / 2 - 8, c = 2 * Math.PI * r, fill = (pct / 100) * c;
-  const color = pct >= 70 ? "#34d399" : pct >= 40 ? "#fbbf24" : pct > 0 ? "#f87171" : "#3f3f46";
+  const color = pct >= 70 ? "#34d399" : pct >= 40 ? "#fbbf24" : pct > 0 ? "#f87171" : T.veryDim;
   return (
     <svg width={size} height={size}>
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#27272a" strokeWidth={6} />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={T.trackRing} strokeWidth={6} />
       <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={6}
         strokeDasharray={`${fill} ${c - fill}`} strokeLinecap="round"
         transform={`rotate(-90 ${size / 2} ${size / 2})`}
         style={{ transition: "stroke-dasharray 0.5s ease" }} />
       <text x={size / 2} y={size / 2} textAnchor="middle" dy="0.35em"
-        fill="#fafafa" fontSize={size * 0.19} fontWeight="700" fontFamily="'Jost',sans-serif">
+        fill={T.text} fontSize={size * 0.19} fontWeight="700" fontFamily="'Jost',sans-serif">
         {pct}%
       </text>
     </svg>
@@ -242,67 +250,28 @@ function Onboarding({ onDone }) {
   const [slide, setSlide] = useState(0);
   const isLast = slide === ONBOARDING_SLIDES.length - 1;
   const s = ONBOARDING_SLIDES[slide];
-
   return (
     <div style={{
       position: "fixed", inset: 0, background: "#09090b", zIndex: 200,
       display: "flex", flexDirection: "column", alignItems: "center",
       justifyContent: "space-between", padding: "60px 28px 48px",
     }}>
-      {/* Content */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", maxWidth: 340, width: "100%" }}>
-        <div style={{
-          width: 80, height: 80, borderRadius: "50%",
-          background: "#18181b", border: "1px solid #27272a",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 32, marginBottom: 32, color: "#f59e0b",
-          fontFamily: "'Cormorant Garamond',serif",
-        }}>{s.icon}</div>
-
-        <h1 style={{
-          fontFamily: "'Cormorant Garamond',serif", fontSize: 30, fontWeight: 700,
-          color: "#fafafa", textAlign: "center", margin: "0 0 16px", lineHeight: 1.2,
-          whiteSpace: "pre-line",
-        }}>{s.title}</h1>
-
-        <p style={{
-          fontFamily: "'Jost',sans-serif", fontSize: 14, color: "#a1a1aa",
-          textAlign: "center", lineHeight: 1.7, margin: 0,
-        }}>{s.body}</p>
+        <div style={{ width: 80, height: 80, borderRadius: "50%", background: "#18181b", border: "1px solid #27272a", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32, marginBottom: 32, color: "#f59e0b", fontFamily: "'Cormorant Garamond',serif" }}>{s.icon}</div>
+        <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 30, fontWeight: 700, color: "#fafafa", textAlign: "center", margin: "0 0 16px", lineHeight: 1.2, whiteSpace: "pre-line" }}>{s.title}</h1>
+        <p style={{ fontFamily: "'Jost',sans-serif", fontSize: 14, color: "#a1a1aa", textAlign: "center", lineHeight: 1.7, margin: 0 }}>{s.body}</p>
       </div>
-
-      {/* Bottom controls */}
       <div style={{ width: "100%", maxWidth: 340 }}>
-        {/* Progress dots */}
         <div style={{ display: "flex", justifyContent: "center", gap: 6, marginBottom: 28 }}>
           {ONBOARDING_SLIDES.map((_, i) => (
-            <div key={i} style={{
-              height: 6, borderRadius: 3,
-              width: i === slide ? 22 : 6,
-              background: i === slide ? "#f59e0b" : "#27272a",
-              transition: "all 0.3s ease",
-            }} />
+            <div key={i} style={{ height: 6, borderRadius: 3, width: i === slide ? 22 : 6, background: i === slide ? "#f59e0b" : "#27272a", transition: "all 0.3s ease" }} />
           ))}
         </div>
-
-        {/* CTA button */}
-        <button onClick={isLast ? onDone : () => setSlide(slide + 1)} style={{
-          width: "100%", padding: "15px", borderRadius: 12,
-          background: "#f59e0b", border: "none", cursor: "pointer",
-          fontFamily: "'Jost',sans-serif", fontSize: 15, fontWeight: 600, color: "#09090b",
-          marginBottom: 12,
-        }}>
+        <button onClick={isLast ? onDone : () => setSlide(slide + 1)} style={{ width: "100%", padding: "15px", borderRadius: 12, background: "#f59e0b", border: "none", cursor: "pointer", fontFamily: "'Jost',sans-serif", fontSize: 15, fontWeight: 600, color: "#09090b", marginBottom: 12 }}>
           {isLast ? "Get Started" : "Next"}
         </button>
-
-        {/* Skip */}
         {!isLast && (
-          <button onClick={onDone} style={{
-            width: "100%", background: "none", border: "none", cursor: "pointer",
-            fontFamily: "'Jost',sans-serif", fontSize: 13, color: "#3f3f46", padding: "8px",
-          }}>
-            Skip
-          </button>
+          <button onClick={onDone} style={{ width: "100%", background: "none", border: "none", cursor: "pointer", fontFamily: "'Jost',sans-serif", fontSize: 13, color: "#3f3f46", padding: "8px" }}>Skip</button>
         )}
       </div>
     </div>
@@ -311,13 +280,14 @@ function Onboarding({ onDone }) {
 
 /* ═══════════════════════════ BOTTOM NAV ═══════════════════════════ */
 
-function BottomNav({ tab, setTab }) {
+function BottomNav({ tab, setTab, T }) {
   return (
     <nav style={{
       position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50,
-      background: "rgba(9,9,11,0.97)", backdropFilter: "blur(16px)",
-      borderTop: "1px solid #27272a", display: "flex",
+      background: T.navBg, backdropFilter: "blur(16px)",
+      borderTop: `1px solid ${T.border}`, display: "flex",
       paddingBottom: "env(safe-area-inset-bottom,0px)",
+      transition: "background 0.3s, border-color 0.3s",
     }}>
       {[
         { id: "info", icon: "📖", label: "Info" },
@@ -330,11 +300,7 @@ function BottomNav({ tab, setTab }) {
           padding: "9px 0 7px", display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
         }}>
           <span style={{ fontSize: 20 }}>{t.icon}</span>
-          <span style={{
-            fontFamily: "'Jost',sans-serif", fontSize: 9, fontWeight: 600,
-            textTransform: "uppercase", letterSpacing: "0.06em",
-            color: tab === t.id ? "#f59e0b" : "#52525b", transition: "color 0.2s",
-          }}>{t.label}</span>
+          <span style={{ fontFamily: "'Jost',sans-serif", fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", color: tab === t.id ? "#f59e0b" : T.dim, transition: "color 0.2s" }}>{t.label}</span>
         </button>
       ))}
     </nav>
@@ -343,18 +309,16 @@ function BottomNav({ tab, setTab }) {
 
 /* ═══════════════════════════ INFO TAB ═══════════════════════════ */
 
-const PS = { fontFamily: "'Jost',sans-serif", fontSize: 13, color: "#a1a1aa", lineHeight: 1.65, margin: "0 0 8px" };
-const HS = { fontFamily: "'Cormorant Garamond',serif", fontSize: 20, fontWeight: 700, color: "#fafafa", margin: "0 0 14px" };
-
-function InfoTab() {
+function InfoTab({ T }) {
   const [openFaq, setOpenFaq] = useState(null);
+  const PS = { fontFamily: "'Jost',sans-serif", fontSize: 13, color: T.muted, lineHeight: 1.65, margin: "0 0 8px" };
+  const HS = { fontFamily: "'Cormorant Garamond',serif", fontSize: 20, fontWeight: 700, color: T.text, margin: "0 0 14px" };
+
   return (
     <div style={{ padding: "20px 16px 110px", maxWidth: 480, margin: "0 auto" }}>
       <div style={{ textAlign: "center", padding: "28px 0 32px" }}>
         <div style={{ fontSize: 44, marginBottom: 12 }}>📖</div>
-        <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 32, fontWeight: 700, color: "#fafafa", margin: "0 0 10px", lineHeight: 1.15 }}>
-          7 Habits Tracker
-        </h1>
+        <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 32, fontWeight: 700, color: T.text, margin: "0 0 10px", lineHeight: 1.15 }}>7 Habits Tracker</h1>
         <p style={{ ...PS, margin: 0, maxWidth: 300, marginLeft: "auto", marginRight: "auto" }}>
           A daily practice companion built on Stephen R. Covey's framework for enduring personal and interpersonal effectiveness.
         </p>
@@ -364,7 +328,7 @@ function InfoTab() {
 
       <div style={{ marginBottom: 28 }}>
         <h2 style={HS}>About the Book</h2>
-        <p style={PS}><em style={{ color: "#d4d4d8" }}>The 7 Habits of Highly Effective People</em> by Stephen R. Covey (1989) is one of the most influential personal development books ever written. Its core premise: lasting effectiveness comes from character, not technique.</p>
+        <p style={PS}><em style={{ color: T.textSub }}>{`The 7 Habits of Highly Effective People`}</em> by Stephen R. Covey (1989) is one of the most influential personal development books ever written. Its core premise: lasting effectiveness comes from character, not technique.</p>
         <p style={PS}>The habits are sequential — building on each other, moving you from dependence through independence to interdependence.</p>
       </div>
 
@@ -380,11 +344,11 @@ function InfoTab() {
           </div>
           <p style={{ ...PS, marginBottom: 10 }}>{g.desc}</p>
           {HABITS.filter((h) => g.ids.includes(h.id)).map((h) => (
-            <div key={h.id} style={{ display: "flex", gap: 12, padding: "11px 0", borderBottom: "1px solid #27272a" }}>
+            <div key={h.id} style={{ display: "flex", gap: 12, padding: "11px 0", borderBottom: `1px solid ${T.border}` }}>
               <div style={{ width: 26, height: 26, borderRadius: "50%", background: g.color + "18", border: `1px solid ${g.color}40`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 11, fontWeight: 700, color: g.color, fontFamily: "'Jost',sans-serif", marginTop: 1 }}>{h.id}</div>
               <div>
-                <div style={{ fontFamily: "'Jost',sans-serif", fontWeight: 600, fontSize: 14, color: "#fafafa", marginBottom: 3 }}>{h.name}</div>
-                <div style={{ fontFamily: "'Jost',sans-serif", fontSize: 12, color: "#71717a", lineHeight: 1.55 }}>{h.desc}</div>
+                <div style={{ fontFamily: "'Jost',sans-serif", fontWeight: 600, fontSize: 14, color: T.text, marginBottom: 3 }}>{h.name}</div>
+                <div style={{ fontFamily: "'Jost',sans-serif", fontSize: 12, color: T.muted, lineHeight: 1.55 }}>{h.desc}</div>
               </div>
             </div>
           ))}
@@ -396,12 +360,12 @@ function InfoTab() {
         {[
           ["📋 Today Tab", `Open it each day. Tap a habit card to expand it. Check each specific action you actually did — written as "I ... today." Your score updates with every tick.`],
           ["📈 History Tab", "See your daily, weekly, and monthly scores. Track your streak and performance trends over time."],
-          ["⚙️ Settings Tab", "Set a daily reminder time to prompt your check-in every day."],
+          ["⚙️ Settings Tab", "Set a daily reminder time and toggle between dark and light mode."],
           ["💡 Mindset", "Missing a day is not failure — it's data. Just show up the next day."],
         ].map(([t, d]) => (
-          <div key={t} style={{ background: "#18181b", border: "1px solid #27272a", borderRadius: 10, padding: "12px 14px", marginBottom: 8 }}>
+          <div key={t} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 10, padding: "12px 14px", marginBottom: 8 }}>
             <div style={{ fontFamily: "'Jost',sans-serif", fontWeight: 600, fontSize: 13, color: "#f59e0b", marginBottom: 4 }}>{t}</div>
-            <div style={{ fontFamily: "'Jost',sans-serif", fontSize: 13, color: "#a1a1aa", lineHeight: 1.55 }}>{d}</div>
+            <div style={{ fontFamily: "'Jost',sans-serif", fontSize: 13, color: T.muted, lineHeight: 1.55 }}>{d}</div>
           </div>
         ))}
       </div>
@@ -409,11 +373,11 @@ function InfoTab() {
       <div>
         <h2 style={HS}>FAQs</h2>
         {FAQS.map((f, i) => (
-          <div key={i} style={{ borderBottom: "1px solid #27272a" }}>
+          <div key={i} style={{ borderBottom: `1px solid ${T.border}` }}>
             <button onClick={() => setOpenFaq(openFaq === i ? null : i)}
               style={{ width: "100%", background: "none", border: "none", cursor: "pointer", padding: "13px 0", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, textAlign: "left" }}>
-              <span style={{ fontFamily: "'Jost',sans-serif", fontSize: 14, fontWeight: 500, color: "#e4e4e7", lineHeight: 1.4 }}>{f.q}</span>
-              <span style={{ color: "#52525b", fontSize: 20, flexShrink: 0, lineHeight: 1 }}>{openFaq === i ? "−" : "+"}</span>
+              <span style={{ fontFamily: "'Jost',sans-serif", fontSize: 14, fontWeight: 500, color: T.textSub, lineHeight: 1.4 }}>{f.q}</span>
+              <span style={{ color: T.dim, fontSize: 20, flexShrink: 0, lineHeight: 1 }}>{openFaq === i ? "−" : "+"}</span>
             </button>
             {openFaq === i && <p style={{ ...PS, paddingBottom: 12, marginTop: -4 }}>{f.a}</p>}
           </div>
@@ -425,7 +389,7 @@ function InfoTab() {
 
 /* ═══════════════════════════ HABIT CARD ═══════════════════════════ */
 
-function HabitCard({ habit, subs, checkedMap, onToggle, note, onNote }) {
+function HabitCard({ habit, subs, checkedMap, onToggle, note, onNote, T }) {
   const [exp, setExp] = useState(false);
   const [refExp, setRefExp] = useState(false);
   const gc = GC[habit.gi];
@@ -434,64 +398,39 @@ function HabitCard({ habit, subs, checkedMap, onToggle, note, onNote }) {
 
   return (
     <div style={{
-      background: "#18181b", borderRadius: 14, marginBottom: 10,
-      border: `1px solid ${allDone ? gc + "55" : exp ? "#3f3f46" : "#27272a"}`,
-      transition: "border-color 0.25s ease", overflow: "hidden",
+      background: T.card, borderRadius: 14, marginBottom: 10,
+      border: `1px solid ${allDone ? gc + "55" : exp ? T.veryDim : T.border}`,
+      transition: "border-color 0.25s ease, background 0.3s", overflow: "hidden",
     }}>
-      <button onClick={() => setExp(!exp)} style={{
-        width: "100%", background: "none", border: "none", cursor: "pointer",
-        padding: "13px 14px", display: "flex", gap: 12, alignItems: "center", textAlign: "left",
-      }}>
-        <div style={{
-          width: 28, height: 28, borderRadius: "50%", flexShrink: 0,
-          background: allDone ? gc : "#27272a", color: allDone ? "#09090b" : "#52525b",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 12, fontWeight: 700, fontFamily: "'Jost',sans-serif",
-          transition: "background 0.2s, color 0.2s",
-        }}>{habit.id}</div>
-
+      <button onClick={() => setExp(!exp)} style={{ width: "100%", background: "none", border: "none", cursor: "pointer", padding: "13px 14px", display: "flex", gap: 12, alignItems: "center", textAlign: "left" }}>
+        <div style={{ width: 28, height: 28, borderRadius: "50%", flexShrink: 0, background: allDone ? gc : T.cardInner, color: allDone ? (T.dark ? "#09090b" : "#fff") : T.dim, border: `1px solid ${allDone ? "transparent" : T.border}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, fontFamily: "'Jost',sans-serif", transition: "background 0.2s, color 0.2s" }}>{habit.id}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: "'Jost',sans-serif", fontWeight: 600, fontSize: 15, color: "#fafafa", lineHeight: 1.3 }}>{habit.name}</div>
+          <div style={{ fontFamily: "'Jost',sans-serif", fontWeight: 600, fontSize: 15, color: T.text, lineHeight: 1.3 }}>{habit.name}</div>
           <div style={{ fontFamily: "'Jost',sans-serif", fontSize: 11, color: gc, marginTop: 2 }}>{habit.tag}</div>
         </div>
-
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
           <div style={{ display: "flex", gap: 4 }}>
             {subs.map((s) => (
-              <div key={s.id} style={{
-                width: 7, height: 7, borderRadius: "50%",
-                background: checkedMap[s.id] ? gc : "#3f3f46",
-                transition: "background 0.2s",
-              }} />
+              <div key={s.id} style={{ width: 7, height: 7, borderRadius: "50%", background: checkedMap[s.id] ? gc : T.veryDim, transition: "background 0.2s" }} />
             ))}
           </div>
-          <span style={{ color: "#52525b", fontSize: 13 }}>{exp ? "▴" : "▾"}</span>
+          <span style={{ color: T.dim, fontSize: 13 }}>{exp ? "▴" : "▾"}</span>
         </div>
       </button>
 
       {exp && (
-        <div style={{ borderTop: "1px solid #27272a" }}>
+        <div style={{ borderTop: `1px solid ${T.border}` }}>
           <div style={{ padding: "4px 14px 2px" }}>
             {subs.map((s, i) => (
-              <div key={s.id} onClick={() => onToggle(s.id)} style={{
-                display: "flex", gap: 10, alignItems: "flex-start",
-                padding: "10px 0", cursor: "pointer",
-                borderBottom: i < subs.length - 1 ? "1px solid #1f1f23" : "none",
-              }}>
+              <div key={s.id} onClick={() => onToggle(s.id)} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "10px 0", cursor: "pointer", borderBottom: i < subs.length - 1 ? `1px solid ${T.divider}` : "none" }}>
                 {checkedMap[s.id]
                   ? <div style={{ width: 22, height: 22, borderRadius: "50%", background: gc, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
-                      <svg width="11" height="11" viewBox="0 0 14 14">
-                        <path d="M2 7l4 4 6-6" stroke="#09090b" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-                      </svg>
+                      <svg width="11" height="11" viewBox="0 0 14 14"><path d="M2 7l4 4 6-6" stroke={T.dark ? "#09090b" : "#fff"} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>
                     </div>
-                  : <div style={{ width: 22, height: 22, borderRadius: "50%", border: "2px solid #3f3f46", flexShrink: 0, marginTop: 1 }} />
+                  : <div style={{ width: 22, height: 22, borderRadius: "50%", border: `2px solid ${T.veryDim}`, flexShrink: 0, marginTop: 1 }} />
                 }
-                <span style={{
-                  fontFamily: "'Jost',sans-serif", fontSize: 13,
-                  color: checkedMap[s.id] ? "#52525b" : "#d4d4d8",
-                  lineHeight: 1.55, transition: "color 0.2s",
-                }}>
-                  <em style={{ fontStyle: "normal", fontWeight: 700, color: checkedMap[s.id] ? "#52525b" : gc }}>I </em>
+                <span style={{ fontFamily: "'Jost',sans-serif", fontSize: 13, color: checkedMap[s.id] ? T.dim : T.textSub, lineHeight: 1.55, transition: "color 0.2s" }}>
+                  <em style={{ fontStyle: "normal", fontWeight: 700, color: checkedMap[s.id] ? T.dim : gc }}>I </em>
                   {s.text} today.
                 </span>
               </div>
@@ -499,26 +438,16 @@ function HabitCard({ habit, subs, checkedMap, onToggle, note, onNote }) {
           </div>
 
           <div style={{ padding: "8px 14px 12px" }}>
-            <button onClick={() => setRefExp(!refExp)} style={{
-              background: "none", border: "none", cursor: "pointer", padding: 0,
-              fontFamily: "'Jost',sans-serif", fontSize: 11, color: refExp ? gc : "#3f3f46",
-              display: "flex", alignItems: "center", gap: 4, transition: "color 0.2s",
-            }}>
+            <button onClick={() => setRefExp(!refExp)} style={{ background: "none", border: "none", cursor: "pointer", padding: 0, fontFamily: "'Jost',sans-serif", fontSize: 11, color: refExp ? gc : T.veryDim, display: "flex", alignItems: "center", gap: 4, transition: "color 0.2s" }}>
               <span>{refExp ? "▾" : "▸"}</span>
               <span>{note ? "Edit reflection" : "Add reflection"}</span>
             </button>
             {refExp && (
-              <textarea value={note} onChange={(e) => onNote(e.target.value)}
-                placeholder="What did this look like for you today?"
-                style={{
-                  display: "block", width: "100%", marginTop: 6, background: "#09090b",
-                  border: "1px solid #3f3f46", borderRadius: 8, padding: "8px 10px",
-                  fontFamily: "'Jost',sans-serif", fontSize: 12, color: "#d4d4d8",
-                  resize: "none", height: 70, outline: "none", lineHeight: 1.5, boxSizing: "border-box",
-                }} />
+              <textarea value={note} onChange={(e) => onNote(e.target.value)} placeholder="What did this look like for you today?"
+                style={{ display: "block", width: "100%", marginTop: 6, background: T.cardInner, border: `1px solid ${T.border}`, borderRadius: 8, padding: "8px 10px", fontFamily: "'Jost',sans-serif", fontSize: 12, color: T.text, resize: "none", height: 70, outline: "none", lineHeight: 1.5, boxSizing: "border-box" }} />
             )}
             {!refExp && note && (
-              <p style={{ fontFamily: "'Jost',sans-serif", fontSize: 12, color: "#3f3f46", margin: "4px 0 0", lineHeight: 1.4, fontStyle: "italic" }}>
+              <p style={{ fontFamily: "'Jost',sans-serif", fontSize: 12, color: T.veryDim, margin: "4px 0 0", lineHeight: 1.4, fontStyle: "italic" }}>
                 "{note.length > 80 ? note.slice(0, 80) + "…" : note}"
               </p>
             )}
@@ -531,7 +460,7 @@ function HabitCard({ habit, subs, checkedMap, onToggle, note, onNote }) {
 
 /* ═══════════════════════════ DAILY TAB ═══════════════════════════ */
 
-function DailyTab({ habits, notes, onToggle, onNote, saved }) {
+function DailyTab({ habits, notes, onToggle, onNote, saved, T }) {
   const s = calcScore(habits);
   const done = Object.values(habits).filter(Boolean).length;
   const ds = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
@@ -540,19 +469,19 @@ function DailyTab({ habits, notes, onToggle, onNote, saved }) {
     <div style={{ padding: "20px 16px 110px", maxWidth: 480, margin: "0 auto" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
         <div>
-          <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26, fontWeight: 700, color: "#fafafa", margin: "0 0 4px", lineHeight: 1.2 }}>Daily Check-in</h1>
-          <div style={{ fontFamily: "'Jost',sans-serif", fontSize: 12, color: "#52525b" }}>{ds}</div>
+          <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26, fontWeight: 700, color: T.text, margin: "0 0 4px", lineHeight: 1.2 }}>Daily Check-in</h1>
+          <div style={{ fontFamily: "'Jost',sans-serif", fontSize: 12, color: T.dim }}>{ds}</div>
           <div style={{ fontFamily: "'Jost',sans-serif", fontSize: 11, color: saved ? "#34d399" : "transparent", marginTop: 3, transition: "color 0.3s" }}>✓ Saved</div>
         </div>
         <div style={{ textAlign: "center" }}>
-          <ScoreRing pct={s} size={78} />
-          <div style={{ fontFamily: "'Jost',sans-serif", fontSize: 10, color: "#52525b", marginTop: 3 }}>{done}/{TOTAL_SUBS} actions</div>
+          <ScoreRing pct={s} size={78} T={T} />
+          <div style={{ fontFamily: "'Jost',sans-serif", fontSize: 10, color: T.dim, marginTop: 3 }}>{done}/{TOTAL_SUBS} actions</div>
         </div>
       </div>
 
       {HABITS.map((h) => (
         <HabitCard key={h.id} habit={h} subs={SUB_HABITS[h.id]} checkedMap={habits}
-          onToggle={onToggle} note={notes[h.id] || ""} onNote={(v) => onNote(h.id, v)} />
+          onToggle={onToggle} note={notes[h.id] || ""} onNote={(v) => onNote(h.id, v)} T={T} />
       ))}
 
       {done === TOTAL_SUBS && (
@@ -566,9 +495,7 @@ function DailyTab({ habits, notes, onToggle, onNote, saved }) {
 
 /* ═══════════════════════════ HISTORY TAB ═══════════════════════════ */
 
-const TT = { background: "#18181b", border: "1px solid #3f3f46", borderRadius: 8, fontFamily: "'Jost',sans-serif", fontSize: 12, color: "#fafafa" };
-
-function HistoryTab({ logs }) {
+function HistoryTab({ logs, T }) {
   const l7 = lastNDays(7).map((d) => ({ day: dayLabel(d), score: logs[d]?.score ?? 0 }));
   const wAvg = Math.round(l7.reduce((s, d) => s + d.score, 0) / 7);
   const mKeys = monthDayKeys();
@@ -581,50 +508,51 @@ function HistoryTab({ logs }) {
   const avg = total ? Math.round(allVals.reduce((s, v) => s + (v.score || 0), 0) / total) : 0;
   const streak = calcStreak(logs);
   const best = calcBest(logs);
+  const TT = { background: T.card, border: `1px solid ${T.border}`, borderRadius: 8, fontFamily: "'Jost',sans-serif", fontSize: 12, color: T.text };
 
   return (
     <div style={{ padding: "20px 16px 110px", maxWidth: 480, margin: "0 auto" }}>
-      <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26, fontWeight: 700, color: "#fafafa", margin: "0 0 20px" }}>Progress</h1>
+      <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26, fontWeight: 700, color: T.text, margin: "0 0 20px" }}>Progress</h1>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 20 }}>
         {[{ label: "Today", pct: todayScore }, { label: "7-Day Avg", pct: wAvg }, { label: "Month Avg", pct: mAvg }].map(({ label, pct }) => (
-          <div key={label} style={{ background: "#18181b", border: "1px solid #27272a", borderRadius: 12, padding: "14px 8px", textAlign: "center" }}>
-            <ScoreRing pct={pct} size={64} />
-            <div style={{ fontFamily: "'Jost',sans-serif", fontSize: 10, color: "#52525b", marginTop: 6, textTransform: "uppercase", letterSpacing: "0.07em" }}>{label}</div>
+          <div key={label} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 12, padding: "14px 8px", textAlign: "center", transition: "background 0.3s" }}>
+            <ScoreRing pct={pct} size={64} T={T} />
+            <div style={{ fontFamily: "'Jost',sans-serif", fontSize: 10, color: T.dim, marginTop: 6, textTransform: "uppercase", letterSpacing: "0.07em" }}>{label}</div>
           </div>
         ))}
       </div>
 
-      <div style={{ background: "#18181b", border: "1px solid #27272a", borderRadius: 14, padding: "16px 14px", marginBottom: 14 }}>
-        <div style={{ fontFamily: "'Jost',sans-serif", fontSize: 13, fontWeight: 600, color: "#e4e4e7", marginBottom: 14 }}>Last 7 Days</div>
+      <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "16px 14px", marginBottom: 14, transition: "background 0.3s" }}>
+        <div style={{ fontFamily: "'Jost',sans-serif", fontSize: 13, fontWeight: 600, color: T.textSub, marginBottom: 14 }}>Last 7 Days</div>
         <ResponsiveContainer width="100%" height={140}>
           <BarChart data={l7} barCategoryGap="28%">
-            <CartesianGrid vertical={false} stroke="#1f1f23" />
-            <XAxis dataKey="day" tick={{ fontSize: 11, fontFamily: "'Jost',sans-serif", fill: "#52525b" }} axisLine={false} tickLine={false} />
-            <YAxis domain={[0, 100]} tick={{ fontSize: 10, fontFamily: "'Jost',sans-serif", fill: "#52525b" }} axisLine={false} tickLine={false} tickCount={3} />
-            <Tooltip contentStyle={TT} formatter={(v) => [`${v}%`, "Score"]} cursor={{ fill: "#1f1f23" }} />
+            <CartesianGrid vertical={false} stroke={T.divider} />
+            <XAxis dataKey="day" tick={{ fontSize: 11, fontFamily: "'Jost',sans-serif", fill: T.dim }} axisLine={false} tickLine={false} />
+            <YAxis domain={[0, 100]} tick={{ fontSize: 10, fontFamily: "'Jost',sans-serif", fill: T.dim }} axisLine={false} tickLine={false} tickCount={3} />
+            <Tooltip contentStyle={TT} formatter={(v) => [`${v}%`, "Score"]} cursor={{ fill: T.divider }} />
             <Bar dataKey="score" fill="#f59e0b" radius={[5, 5, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
 
-      <div style={{ background: "#18181b", border: "1px solid #27272a", borderRadius: 14, padding: "16px 14px", marginBottom: 14 }}>
-        <div style={{ fontFamily: "'Jost',sans-serif", fontSize: 13, fontWeight: 600, color: "#e4e4e7", marginBottom: 14 }}>
+      <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "16px 14px", marginBottom: 14, transition: "background 0.3s" }}>
+        <div style={{ fontFamily: "'Jost',sans-serif", fontSize: 13, fontWeight: 600, color: T.textSub, marginBottom: 14 }}>
           {new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" })}
         </div>
         <ResponsiveContainer width="100%" height={130}>
           <LineChart data={mData}>
-            <CartesianGrid vertical={false} stroke="#1f1f23" />
-            <XAxis dataKey="day" tick={{ fontSize: 10, fontFamily: "'Jost',sans-serif", fill: "#52525b" }} axisLine={false} tickLine={false} interval={4} />
-            <YAxis domain={[0, 100]} tick={{ fontSize: 10, fontFamily: "'Jost',sans-serif", fill: "#52525b" }} axisLine={false} tickLine={false} tickCount={3} />
+            <CartesianGrid vertical={false} stroke={T.divider} />
+            <XAxis dataKey="day" tick={{ fontSize: 10, fontFamily: "'Jost',sans-serif", fill: T.dim }} axisLine={false} tickLine={false} interval={4} />
+            <YAxis domain={[0, 100]} tick={{ fontSize: 10, fontFamily: "'Jost',sans-serif", fill: T.dim }} axisLine={false} tickLine={false} tickCount={3} />
             <Tooltip contentStyle={TT} formatter={(v) => [`${v}%`, "Score"]} />
             <Line type="monotone" dataKey="score" stroke="#a78bfa" strokeWidth={2} dot={false} activeDot={{ r: 4, fill: "#a78bfa" }} />
           </LineChart>
         </ResponsiveContainer>
       </div>
 
-      <div style={{ background: "#18181b", border: "1px solid #27272a", borderRadius: 14, padding: "16px 14px" }}>
-        <div style={{ fontFamily: "'Jost',sans-serif", fontSize: 13, fontWeight: 600, color: "#e4e4e7", marginBottom: 14 }}>All-Time</div>
+      <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "16px 14px", transition: "background 0.3s" }}>
+        <div style={{ fontFamily: "'Jost',sans-serif", fontSize: 13, fontWeight: 600, color: T.textSub, marginBottom: 14 }}>All-Time</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           {[
             { label: "Days Logged", val: total, icon: "📅" },
@@ -632,10 +560,10 @@ function HistoryTab({ logs }) {
             { label: "Current Streak", val: `${streak}d`, icon: "🔥" },
             { label: "Best Streak", val: `${best}d`, icon: "🏆" },
           ].map(({ label, val, icon }) => (
-            <div key={label} style={{ background: "#09090b", borderRadius: 10, padding: "14px", textAlign: "center" }}>
+            <div key={label} style={{ background: T.cardInner, borderRadius: 10, padding: "14px", textAlign: "center", transition: "background 0.3s" }}>
               <div style={{ fontSize: 22, marginBottom: 5 }}>{icon}</div>
-              <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, fontWeight: 700, color: "#fafafa", lineHeight: 1 }}>{val}</div>
-              <div style={{ fontFamily: "'Jost',sans-serif", fontSize: 10, color: "#52525b", marginTop: 5, textTransform: "uppercase", letterSpacing: "0.07em" }}>{label}</div>
+              <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 28, fontWeight: 700, color: T.text, lineHeight: 1 }}>{val}</div>
+              <div style={{ fontFamily: "'Jost',sans-serif", fontSize: 10, color: T.dim, marginTop: 5, textTransform: "uppercase", letterSpacing: "0.07em" }}>{label}</div>
             </div>
           ))}
         </div>
@@ -646,25 +574,20 @@ function HistoryTab({ logs }) {
 
 /* ═══════════════════════════ SETTINGS TAB ═══════════════════════════ */
 
-function SettingsTab({ settings, onSave }) {
+function SettingsTab({ settings, onSave, T, dark, onToggleTheme }) {
   const [enabled, setEnabled] = useState(settings.enabled);
   const [time, setTime] = useState(settings.time || "20:00");
   const [permStatus, setPermStatus] = useState(
     typeof Notification !== "undefined" ? Notification.permission : "unsupported"
   );
+  const PS = { fontFamily: "'Jost',sans-serif", fontSize: 13, color: T.muted, lineHeight: 1.65, margin: "0 0 8px" };
 
   const handleToggle = async () => {
     if (!enabled) {
-      if (typeof Notification === "undefined") {
-        alert("Notifications are not supported on this browser.");
-        return;
-      }
+      if (typeof Notification === "undefined") { alert("Notifications are not supported on this browser."); return; }
       const perm = await Notification.requestPermission();
       setPermStatus(perm);
-      if (perm === "granted") {
-        setEnabled(true);
-        onSave({ enabled: true, time });
-      }
+      if (perm === "granted") { setEnabled(true); onSave({ enabled: true, time }); }
     } else {
       setEnabled(false);
       onSave({ enabled: false, time });
@@ -676,51 +599,44 @@ function SettingsTab({ settings, onSave }) {
     if (enabled) onSave({ enabled: true, time: e.target.value });
   };
 
+  const Toggle = ({ on, onPress }) => (
+    <button onClick={onPress} style={{ width: 48, height: 28, borderRadius: 14, background: on ? "#f59e0b" : T.veryDim, border: "none", cursor: "pointer", position: "relative", transition: "background 0.25s", flexShrink: 0 }}>
+      <div style={{ width: 22, height: 22, borderRadius: "50%", background: "#fff", position: "absolute", top: 3, left: on ? 23 : 3, transition: "left 0.25s", boxShadow: "0 1px 4px rgba(0,0,0,0.3)" }} />
+    </button>
+  );
+
   return (
     <div style={{ padding: "20px 16px 110px", maxWidth: 480, margin: "0 auto" }}>
-      <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26, fontWeight: 700, color: "#fafafa", margin: "0 0 24px" }}>Settings</h1>
+      <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: 26, fontWeight: 700, color: T.text, margin: "0 0 24px" }}>Settings</h1>
 
-      {/* Notification card */}
-      <div style={{ background: "#18181b", border: "1px solid #27272a", borderRadius: 14, padding: "16px 14px", marginBottom: 12 }}>
+      {/* Appearance */}
+      <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "16px 14px", marginBottom: 12, transition: "background 0.3s" }}>
+        <div style={{ fontFamily: "'Jost',sans-serif", fontSize: 13, fontWeight: 600, color: "#f59e0b", marginBottom: 4 }}>Appearance</div>
+        <p style={{ ...PS, marginBottom: 14 }}>Switch between dark and light mode to suit your preference or environment.</p>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <span style={{ fontFamily: "'Jost',sans-serif", fontSize: 14, color: T.textSub }}>{dark ? "🌙 Dark mode" : "☀️ Light mode"}</span>
+          <Toggle on={dark} onPress={onToggleTheme} />
+        </div>
+      </div>
+
+      {/* Notifications */}
+      <div style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: "16px 14px", marginBottom: 12, transition: "background 0.3s" }}>
         <div style={{ fontFamily: "'Jost',sans-serif", fontSize: 13, fontWeight: 600, color: "#f59e0b", marginBottom: 4 }}>Daily Reminder</div>
         <p style={{ ...PS, marginBottom: 16 }}>Get a notification each day at your chosen time to prompt your check-in.</p>
 
-        {/* Toggle row */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: enabled ? 18 : 0 }}>
-          <span style={{ fontFamily: "'Jost',sans-serif", fontSize: 14, color: "#e4e4e7" }}>Enable reminders</span>
-          <button onClick={handleToggle} style={{
-            width: 48, height: 28, borderRadius: 14,
-            background: enabled ? "#f59e0b" : "#3f3f46",
-            border: "none", cursor: "pointer", position: "relative",
-            transition: "background 0.25s", flexShrink: 0,
-          }}>
-            <div style={{
-              width: 22, height: 22, borderRadius: "50%", background: "#fff",
-              position: "absolute", top: 3,
-              left: enabled ? 23 : 3,
-              transition: "left 0.25s",
-              boxShadow: "0 1px 4px rgba(0,0,0,0.4)",
-            }} />
-          </button>
+          <span style={{ fontFamily: "'Jost',sans-serif", fontSize: 14, color: T.textSub }}>Enable reminders</span>
+          <Toggle on={enabled} onPress={handleToggle} />
         </div>
 
-        {/* Time picker */}
         {enabled && (
           <div>
-            <label style={{ fontFamily: "'Jost',sans-serif", fontSize: 11, color: "#71717a", display: "block", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.07em" }}>
-              Reminder time
-            </label>
+            <label style={{ fontFamily: "'Jost',sans-serif", fontSize: 11, color: T.dim, display: "block", marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.07em" }}>Reminder time</label>
             <input type="time" value={time} onChange={handleTimeChange}
-              style={{
-                background: "#09090b", border: "1px solid #3f3f46", borderRadius: 10,
-                padding: "12px 14px", fontFamily: "'Jost',sans-serif", fontSize: 16,
-                color: "#fafafa", outline: "none", width: "100%", boxSizing: "border-box",
-                colorScheme: "dark",
-              }} />
+              style={{ background: T.cardInner, border: `1px solid ${T.border}`, borderRadius: 10, padding: "12px 14px", fontFamily: "'Jost',sans-serif", fontSize: 16, color: T.text, outline: "none", width: "100%", boxSizing: "border-box", colorScheme: dark ? "dark" : "light" }} />
           </div>
         )}
 
-        {/* Permission denied message */}
         {permStatus === "denied" && (
           <p style={{ fontFamily: "'Jost',sans-serif", fontSize: 12, color: "#f87171", margin: "12px 0 0", lineHeight: 1.55 }}>
             Notifications are blocked. Go to your browser or phone settings and allow notifications for this site, then try again.
@@ -728,8 +644,7 @@ function SettingsTab({ settings, onSave }) {
         )}
       </div>
 
-      {/* Footnote */}
-      <p style={{ fontFamily: "'Jost',sans-serif", fontSize: 12, color: "#3f3f46", lineHeight: 1.6, margin: 0 }}>
+      <p style={{ fontFamily: "'Jost',sans-serif", fontSize: 12, color: T.veryDim, lineHeight: 1.6, margin: 0 }}>
         Reminders work best when the app is installed on your home screen. If the app hasn't been opened in a while, some reminders may not arrive.
       </p>
     </div>
@@ -747,10 +662,12 @@ export default function App() {
   const [saved, setSaved] = useState(false);
   const [onboarded, setOnboarded] = useState(true);
   const [settings, setSettings] = useState({ enabled: false, time: "20:00" });
+  const [dark, setDark] = useState(true);
   const timer = useRef(null);
   const notifTimer = useRef(null);
 
-  // Inject fonts
+  const T = makeTheme(dark);
+
   useEffect(() => {
     const link = document.createElement("link");
     link.rel = "stylesheet";
@@ -758,13 +675,13 @@ export default function App() {
     document.head.appendChild(link);
   }, []);
 
-  // Load data, settings, and onboarding state
   useEffect(() => {
-    // Onboarding
     const done = localStorage.getItem("onboarded");
     if (!done) setOnboarded(false);
 
-    // Settings
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme) setDark(savedTheme === "dark");
+
     const savedSettings = localStorage.getItem("settings");
     if (savedSettings) {
       const s = JSON.parse(savedSettings);
@@ -774,7 +691,6 @@ export default function App() {
       }
     }
 
-    // Habits data
     const all = stor.all();
     setLogs(all);
     const td = all[localKey()];
@@ -782,7 +698,6 @@ export default function App() {
     setReady(true);
   }, []);
 
-  // Autosave
   useEffect(() => {
     if (!ready) return;
     const s = calcScore(habits);
@@ -794,10 +709,7 @@ export default function App() {
     timer.current = setTimeout(() => setSaved(false), 2000);
   }, [habits, notes, ready]);
 
-  const finishOnboarding = () => {
-    localStorage.setItem("onboarded", "true");
-    setOnboarded(true);
-  };
+  const finishOnboarding = () => { localStorage.setItem("onboarded", "true"); setOnboarded(true); };
 
   const saveSettings = (newSettings) => {
     setSettings(newSettings);
@@ -809,24 +721,30 @@ export default function App() {
     }
   };
 
+  const toggleTheme = () => {
+    const next = !dark;
+    setDark(next);
+    localStorage.setItem("theme", next ? "dark" : "light");
+  };
+
   if (!ready) return (
-    <div style={{ background: "#09090b", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <div style={{ fontFamily: "'Jost',sans-serif", color: "#3f3f46", fontSize: 14 }}>Loading…</div>
+    <div style={{ background: T.bg, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ fontFamily: "'Jost',sans-serif", color: T.dim, fontSize: 14 }}>Loading…</div>
     </div>
   );
 
   return (
-    <div style={{ background: "#09090b", minHeight: "100vh" }}>
+    <div style={{ background: T.bg, minHeight: "100vh", transition: "background 0.3s" }}>
       {!onboarded && <Onboarding onDone={finishOnboarding} />}
-      {tab === "info" && <InfoTab />}
+      {tab === "info" && <InfoTab T={T} />}
       {tab === "daily" && (
-        <DailyTab habits={habits} notes={notes} saved={saved}
+        <DailyTab habits={habits} notes={notes} saved={saved} T={T}
           onToggle={(id) => setHabits((p) => ({ ...p, [id]: !p[id] }))}
           onNote={(id, v) => setNotes((p) => ({ ...p, [id]: v }))} />
       )}
-      {tab === "history" && <HistoryTab logs={logs} />}
-      {tab === "settings" && <SettingsTab settings={settings} onSave={saveSettings} />}
-      <BottomNav tab={tab} setTab={setTab} />
+      {tab === "history" && <HistoryTab logs={logs} T={T} />}
+      {tab === "settings" && <SettingsTab settings={settings} onSave={saveSettings} T={T} dark={dark} onToggleTheme={toggleTheme} />}
+      <BottomNav tab={tab} setTab={setTab} T={T} />
     </div>
   );
 }
