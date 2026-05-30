@@ -585,7 +585,6 @@ export default function App() {
   const [ready, setReady] = useState(false);
   const [saved, setSaved] = useState(false);
   const timer = useRef(null);
-  const inited = useRef(false);
 
   // Inject fonts
   useEffect(() => {
@@ -605,9 +604,8 @@ export default function App() {
   }, []);
 
   // Autosave
-  useEffect(() => {
+useEffect(() => {
     if (!ready) return;
-    if (!inited.current) { inited.current = true; return; }
     const s = calcScore(habits);
     const log = { habits, notes, score: s, date: localKey() };
     stor.set(`log:${localKey()}`, log);
