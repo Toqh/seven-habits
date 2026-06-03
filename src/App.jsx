@@ -1,16 +1,12 @@
 import { useState, useEffect, useRef } from "react";
-import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  LineChart, Line, CartesianGrid, Cell,
-} from "recharts";
+import { MoreVertical, TrendingUp, Settings, Sparkles, BookOpen, ChevronLeft } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, CartesianGrid, Cell } from "recharts";
 import { supabase } from "./supabase";
-
-/* ═══════════════════════════ HABITS ═══════════════════════════ */
 
 const HABITS = [
   { id:1, name:"Be Proactive", tag:"Own your responses", gi:0, desc:"You are responsible for your life. Your behavior is a function of your decisions, not your conditions." },
   { id:2, name:"Begin with the End in Mind", tag:"Define your vision first", gi:0, desc:"Start every day and task with a clear picture of your desired destination." },
-  { id:3, name:"Put First Things First", tag:"Prioritize what matters most", gi:0, desc:"Schedule your priorities, not prioritize your schedule. Focus on important, not just urgent." },
+  { id:3, name:"Put First Things First", tag:"Prioritize what matters most", gi:0, desc:"Schedule your priorities — not prioritize your schedule. Focus on important, not just urgent." },
   { id:4, name:"Think Win-Win", tag:"Seek mutual benefit always", gi:1, desc:"Frame every interaction as cooperative, not competitive. Look for solutions that benefit all parties." },
   { id:5, name:"Seek First to Understand", tag:"Listen before you speak", gi:1, desc:"Most people listen with intent to reply. Listen instead with genuine intent to understand." },
   { id:6, name:"Synergize", tag:"Create more than the sum of parts", gi:1, desc:"The whole is greater than its parts. Creative cooperation opens possibilities no individual could achieve alone." },
@@ -27,27 +23,47 @@ const DEFAULT_SUBS = {
   7:[{id:"7a",text:"did something physically restorative — movement, exercise, or rest"},{id:"7b",text:"invested time in reading, learning, or sharpening a mental skill"},{id:"7c",text:"spent time in prayer, reflection, gratitude, or spiritual renewal"}],
 };
 
-const TOTAL_DEFAULT_SUBS = Object.values(DEFAULT_SUBS).flat().length; // 20
+const TOTAL_DEFAULT_SUBS = Object.values(DEFAULT_SUBS).flat().length;
 const GC = ["#a78bfa","#fb923c","#34d399"];
 const GROUP_LABELS = ["Private Victory","Public Victory","Renewal"];
 const SELAR_URL = "https://selar.com/t558n83s00";
-
-const FAQS = [
-  {q:"Do I need to complete all actions every day?",a:"No. Consistent progress matters more than perfection. Even 8–10 actions practised intentionally each day builds real momentum."},
-  {q:"How is my daily score calculated?",a:"It's the percentage of all actions you checked off — including any custom actions you've added as a Pro user. It's a mirror, not a judgment."},
-  {q:"Will my data sync across devices?",a:"Yes. As long as you're signed in with the same account, your history syncs automatically across all your devices."},
-  {q:"What does Pro include?",a:"Pro unlocks detailed analytics, custom actions inside each habit, history export (CSV & PDF), and streak protection grace tokens."},
-  {q:"What's the difference between weekly and monthly scores?",a:"Weekly is the average of your daily scores over the last 7 days. Monthly is the average of all logged days in the current calendar month."},
-];
 
 const ONBOARDING_SLIDES = [
   {icon:"✦",title:"Welcome to\n7 Habits Tracker",body:"A daily practice companion built on Stephen R. Covey's principles for enduring personal effectiveness."},
   {icon:"⚡",title:"Character over technique",body:"The 7 Habits aren't hacks or shortcuts. They're principles grounded in who you are — the foundation of lasting effectiveness."},
   {icon:"✅",title:"Check in every day",body:"Tap a habit card to expand it. Tick the specific actions you actually practised. Your score updates with every tick."},
-  {icon:"📈",title:"Watch yourself grow",body:"Track your daily, weekly, and monthly scores, streaks, and long-term trends in the History tab. Let's begin."},
+  {icon:"📈",title:"Watch yourself grow",body:"Track your daily, weekly, and monthly scores, streaks, and long-term trends. Let's begin."},
+  {icon:"👋",title:"One last thing —\nwhat's your name?",body:"We'd love to greet you properly each day.", isNameStep:true},
 ];
 
-/* ═══════════════════════════ PRO HASHES ═══════════════════════════ */
+const GREETING_TEMPLATES = [
+  (n,h) => h<12 ? `Good morning, ${n}.` : h<17 ? `Good afternoon, ${n}.` : `Good evening, ${n}.`,
+  n => `${n} returns. Let's go.`,
+  n => `Hey ${n}! Ready to build?`,
+  n => `Welcome back, ${n}.`,
+  n => `${n}. Today counts.`,
+  n => `Back again, ${n}. Good.`,
+  n => `The work continues, ${n}.`,
+  n => `${n} shows up. Respect.`,
+  n => `Ready to build, ${n}?`,
+  n => `${n}. Make it count.`,
+  n => `Good to see you, ${n}.`,
+  n => `${n} is in the building.`,
+  n => `Let's get to work, ${n}.`,
+  n => `Another day, ${n}. Let's go.`,
+  n => `The practice calls, ${n}.`,
+  n => `Eyes forward, ${n}.`,
+  n => `${n}. Sharpen the saw.`,
+  n => `Begin with the end in mind, ${n}.`,
+  n => `Put first things first, ${n}.`,
+  n => `Synergy starts with you, ${n}.`,
+];
+
+const getGreeting = (name, hour) => {
+  const n = name || "friend";
+  const idx = Math.floor(Math.random() * GREETING_TEMPLATES.length);
+  return GREETING_TEMPLATES[idx](n, hour);
+};
 
 const PRO_HASHES = [
   "be2a3ece63c69199f6dd5131e333b1ea372fe2467f79a26448cc2e1f18c8df04","da673abc8d9a5ad160c7e5476b30720a3e0f470e044767055d5a3c02fb5e2d4b",
@@ -152,390 +168,433 @@ const PRO_HASHES = [
   "b216141d3644c68b56f6b7d27f05c7126b3fde47b2510e1e175c050d2aa09e86","7b45deb89c88d865de4c238d8692706b84a8fdd6e260debb0e051239a7c809dd",
 ];
 
-/* ═══════════════════════════ CRYPTO ═══════════════════════════ */
-
 const hashKey=async(key)=>{const buf=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(key));return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");};
 const verifyKey=async(key)=>PRO_HASHES.includes(await hashKey(key.trim().toUpperCase()));
+const claimLicenceKey=async(key,userId)=>{
+  const h=await hashKey(key.trim().toUpperCase());
+  if(!PRO_HASHES.includes(h))return{success:false,error:"Invalid key. Check and try again."};
+  const{data:ex}=await supabase.from("licence_keys").select("claimed_by").eq("key_hash",h).eq("claimed_by",userId).single().catch(()=>({data:null}));
+  if(ex)return{success:true};
+  const{error:ie}=await supabase.from("licence_keys").insert({key_hash:h,claimed_by:userId});
+  if(ie){if(ie.code==="23505")return{success:false,error:"This key has already been used by another account."};return{success:false,error:"Activation failed. Please try again."};}
+  return{success:true};
+};
 
-/* ═══════════════════════════ THEME ═══════════════════════════ */
-
-const makeTheme=(dark)=>({
-  dark,
-  bg:        dark?"#09090b":"#f7f7f2",
-  card:      dark?"#18181b":"#ffffff",
-  cardInner: dark?"#09090b":"#f2f2ed",
-  border:    dark?"#27272a":"#e4e4df",
-  divider:   dark?"#1f1f23":"#ebebeb",
-  text:      dark?"#fafafa":"#0f0f0f",
-  textSub:   dark?"#e4e4e7":"#1a1a1a",
-  muted:     dark?"#a1a1aa":"#6b6b6b",
-  dim:       dark?"#52525b":"#9b9b9b",
-  veryDim:   dark?"#3f3f46":"#c8c8c3",
-  navBg:     dark?"rgba(9,9,11,0.97)":"rgba(247,247,242,0.97)",
-  trackRing: dark?"#27272a":"#e4e4df",
-  sheetBg:   dark?"#18181b":"#ffffff",
-});
-
-/* ═══════════════════════════ HELPERS ═══════════════════════════ */
-
+const makeTheme=(dark)=>({dark,bg:dark?"#09090b":"#f7f7f2",card:dark?"#18181b":"#ffffff",cardInner:dark?"#09090b":"#f2f2ed",border:dark?"#27272a":"#e4e4df",divider:dark?"#1f1f23":"#ebebeb",text:dark?"#fafafa":"#0f0f0f",textSub:dark?"#e4e4e7":"#1a1a1a",muted:dark?"#a1a1aa":"#6b6b6b",dim:dark?"#52525b":"#9b9b9b",veryDim:dark?"#3f3f46":"#c8c8c3",navBg:dark?"rgba(9,9,11,0.97)":"rgba(247,247,242,0.97)",trackRing:dark?"#27272a":"#e4e4df",sheetBg:dark?"#18181b":"#ffffff"});
 const localKey=(d=new Date())=>{const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,"0"),day=String(d.getDate()).padStart(2,"0");return`${y}-${m}-${day}`;};
-
-// customActions = { habitId: [{ id, text }] }
-const getTotalSubs=(customActions={})=>
-  TOTAL_DEFAULT_SUBS+Object.values(customActions).reduce((s,arr)=>s+arr.length,0);
-
-const calcScore=(h,totalSubs=TOTAL_DEFAULT_SUBS)=>
-  Math.round((Object.values(h).filter(Boolean).length/totalSubs)*100);
-
+const getTotalSubs=(ca={})=>TOTAL_DEFAULT_SUBS+Object.values(ca).reduce((s,a)=>s+a.length,0);
+const calcScore=(h,t=TOTAL_DEFAULT_SUBS)=>Math.round((Object.values(h).filter(Boolean).length/t)*100);
 const lastNDays=(n)=>Array.from({length:n},(_,i)=>{const d=new Date();d.setDate(d.getDate()-(n-1-i));return localKey(d);});
+const dayLabel=(key)=>{if(key===localKey())return"Today";const y=new Date();y.setDate(y.getDate()-1);if(key===localKey(y))return"Yest";const[yr,mo,d]=key.split("-").map(Number);return new Date(yr,mo-1,d).toLocaleDateString("en-US",{weekday:"short"});};
+const monthDayKeys=()=>{const now=new Date(),yr=now.getFullYear(),mo=now.getMonth(),keys=[],today=localKey();for(let d=new Date(yr,mo,1);d.getMonth()===mo;d.setDate(d.getDate()+1)){const k=localKey(new Date(d));keys.push(k);if(k===today)break;}return keys;};
+const calcStreak=(logs)=>{let c=0;const d=new Date();for(let i=0;i<365;i++){const k=localKey(d);if(logs[k]?.score>0)c++;else if(i===0){}else break;d.setDate(d.getDate()-1);}return c;};
+const calcBest=(logs)=>{const s=Object.keys(logs).sort();let best=0,cur=0,prev=null;for(const k of s){if(logs[k]?.score>0){if(prev){const[py,pm,pd]=prev.split("-").map(Number),[cy,cm,cd]=k.split("-").map(Number);const diff=Math.round((new Date(cy,cm-1,cd)-new Date(py,pm-1,pd))/86400000);cur=diff===1?cur+1:1;}else cur=1;best=Math.max(best,cur);prev=k;}else{cur=0;prev=null;}}return best;};
+const fmtDate=(key)=>{const[y,m,d]=key.split("-").map(Number);return new Date(y,m-1,d).toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"});};
 
-const dayLabel=(key)=>{
-  if(key===localKey())return"Today";
-  const y=new Date();y.setDate(y.getDate()-1);
-  if(key===localKey(y))return"Yest";
-  const[yr,mo,d]=key.split("-").map(Number);
-  return new Date(yr,mo-1,d).toLocaleDateString("en-US",{weekday:"short"});
-};
-
-const monthDayKeys=()=>{
-  const now=new Date(),yr=now.getFullYear(),mo=now.getMonth(),keys=[],today=localKey();
-  for(let d=new Date(yr,mo,1);d.getMonth()===mo;d.setDate(d.getDate()+1)){const k=localKey(new Date(d));keys.push(k);if(k===today)break;}
-  return keys;
-};
-
-const calcStreak=(logs)=>{let count=0;const d=new Date();for(let i=0;i<365;i++){const k=localKey(d);if(logs[k]?.score>0)count++;else if(i===0){}else break;d.setDate(d.getDate()-1);}return count;};
-
-const calcBest=(logs)=>{
-  const sorted=Object.keys(logs).sort();let best=0,cur=0,prev=null;
-  for(const k of sorted){if(logs[k]?.score>0){if(prev){const[py,pm,pd]=prev.split("-").map(Number),[cy,cm,cd]=k.split("-").map(Number);const diff=Math.round((new Date(cy,cm-1,cd)-new Date(py,pm-1,pd))/86400000);cur=diff===1?cur+1:1;}else cur=1;best=Math.max(best,cur);prev=k;}else{cur=0;prev=null;}}
-  return best;
-};
-
-/* ═══════════════════════════ STORAGE ═══════════════════════════ */
-
-const stor={
-  get:(k)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch{return null;}},
-  set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch{}},
-  all:()=>{const r={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k?.startsWith("log:")){try{r[k.replace("log:","")]=JSON.parse(localStorage.getItem(k));}catch{}}}return r;},
-};
-
-/* ═══════════════════════════ SUPABASE ═══════════════════════════ */
-
+const stor={get:(k)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch{return null;}},set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch{}},all:()=>{const r={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k?.startsWith("log:")){try{r[k.replace("log:","")]=JSON.parse(localStorage.getItem(k));}catch{}}}return r;}};
 const syncLog=async(uid,dk,log)=>{try{await supabase.from("logs").upsert({user_id:uid,date:dk,habits:log.habits,notes:log.notes,score:log.score},{onConflict:"user_id,date"});}catch{}};
 const fetchAllLogs=async(uid)=>{try{const{data,error}=await supabase.from("logs").select("*").eq("user_id",uid).order("date",{ascending:true});if(error)throw error;const r={};data.forEach(row=>{r[row.date]={habits:row.habits||{},notes:row.notes||{},score:row.score||0};});return r;}catch{return stor.all();}};
-const fetchProfile=async(uid)=>{try{const{data}=await supabase.from("profiles").select("is_pro,custom_subs,custom_habits,grace_tokens,grace_tokens_month").eq("id",uid).single();return data;}catch{return null;}};
-const ensureProfile=async(user)=>{try{const{data}=await supabase.from("profiles").select("id").eq("id",user.id).single();if(!data)await supabase.from("profiles").insert({id:user.id,email:user.email,is_pro:false});}catch{}};
+const fetchProfile=async(uid)=>{try{const{data}=await supabase.from("profiles").select("is_pro,custom_subs,custom_habits,grace_tokens,grace_tokens_month,name").eq("id",uid).single();return data;}catch{return null;}};
+const ensureProfile=async(user)=>{try{const{data}=await supabase.from("profiles").select("id").eq("id",user.id).single();if(!data)await supabase.from("profiles").insert({id:user.id,email:user.email,is_pro:false,name:""});}catch{}};
 const updateProfile=async(uid,updates)=>{try{await supabase.from("profiles").update(updates).eq("id",uid);}catch{}};
 
-/* ═══════════════════════════ EXPORT ═══════════════════════════ */
+const generateCSV=(logs)=>{const headers=["Date","Score","Actions Done","Total Possible",...HABITS.map(h=>`"${h.name}"`),"Notes"].join(",");const rows=Object.entries(logs).sort(([a],[b])=>a.localeCompare(b)).map(([date,log])=>{const done=Object.values(log.habits||{}).filter(Boolean).length;const habitCols=HABITS.map(h=>{const subs=DEFAULT_SUBS[h.id],d=subs.filter(s=>log.habits?.[s.id]).length;if(d===subs.length)return"Complete";if(d>0)return`${d}/${subs.length}`;return"Skipped";});const notes=Object.values(log.notes||{}).filter(Boolean).join(" | ").replace(/"/g,"'");return[date,`${log.score||0}%`,done,TOTAL_DEFAULT_SUBS,...habitCols,`"${notes}"`].join(",");});return[headers,...rows].join("\n");};
+const shareOrDownload=async(blob,filename,title)=>{try{const file=new File([blob],filename,{type:blob.type});if(navigator.share&&navigator.canShare?.({files:[file]})){await navigator.share({files:[file],title});return;}}catch{}const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=filename;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);};
+const exportCSV=async(logs)=>{await shareOrDownload(new Blob([generateCSV(logs)],{type:"text/csv"}),"7-habits-history.csv","7 Habits History");};
+const exportPDF=(logs,email="")=>{const entries=Object.entries(logs).sort(([a],[b])=>a.localeCompare(b));const total=entries.length,avg=total?Math.round(entries.reduce((s,[,v])=>s+(v.score||0),0)/total):0,streak=calcStreak(logs);const rows=entries.map(([date,log])=>{const done=Object.values(log.habits||{}).filter(Boolean).length,s=log.score||0;const cls=s>=70?"color:#059669":s>=40?"color:#d97706":"color:#dc2626";const groups=[0,1,2].map(gi=>{const hs=HABITS.filter(h=>h.gi===gi),t=hs.reduce((sum,h)=>sum+DEFAULT_SUBS[h.id].length,0),d=hs.reduce((sum,h)=>sum+DEFAULT_SUBS[h.id].filter(sub=>log.habits?.[sub.id]).length,0);return`${d}/${t}`;});return`<tr><td>${date}</td><td style="font-weight:600;${cls}">${s}%</td><td>${done}/${TOTAL_DEFAULT_SUBS}</td><td>${groups[0]}</td><td>${groups[1]}</td><td>${groups[2]}</td></tr>`;}).join("");const html=`<!DOCTYPE html><html><head><title>7 Habits Report</title><style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:Georgia,serif;max-width:680px;margin:40px auto;padding:0 20px;color:#1a1a1a;font-size:13px;}h1{font-size:26px;margin-bottom:4px;}.meta{color:#777;margin-bottom:28px;font-size:12px;}.stats{display:flex;gap:24px;background:#f5f5f0;padding:16px 20px;border-radius:10px;margin-bottom:28px;}.stat{text-align:center;}.stat-val{font-size:22px;font-weight:700;}.stat-lbl{font-size:11px;color:#888;text-transform:uppercase;}table{width:100%;border-collapse:collapse;font-size:12px;}th{background:#09090b;color:#fff;padding:8px 10px;text-align:left;font-size:11px;text-transform:uppercase;}td{padding:7px 10px;border-bottom:1px solid #eee;}tr:nth-child(even) td{background:#fafaf7;}</style></head><body><h1>7 Habits Practice Report</h1><p class="meta">Generated ${new Date().toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"})}${email?` · ${email}`:""}</p><div class="stats"><div class="stat"><div class="stat-val">${total}</div><div class="stat-lbl">Days Logged</div></div><div class="stat"><div class="stat-val">${avg}%</div><div class="stat-lbl">Avg Score</div></div><div class="stat"><div class="stat-val">${streak}</div><div class="stat-lbl">Streak</div></div></div><table><tr><th>Date</th><th>Score</th><th>Actions</th><th>Private V.</th><th>Public V.</th><th>Renewal</th></tr>${rows}</table></body></html>`;const win=window.open("","_blank");if(win){win.document.write(html);win.document.close();setTimeout(()=>win.print(),600);}};
 
-const generateCSV=(logs)=>{
-  const headers=["Date","Score","Actions Done","Total Possible",...HABITS.map(h=>`"${h.name}"`),"Notes"].join(",");
-  const rows=Object.entries(logs).sort(([a],[b])=>a.localeCompare(b)).map(([date,log])=>{
-    const done=Object.values(log.habits||{}).filter(Boolean).length;
-    const habitCols=HABITS.map(h=>{const subs=DEFAULT_SUBS[h.id],d=subs.filter(s=>log.habits?.[s.id]).length;if(d===subs.length)return"Complete";if(d>0)return`${d}/${subs.length}`;return"Skipped";});
-    const notes=Object.values(log.notes||{}).filter(Boolean).join(" | ").replace(/"/g,"'");
-    return[date,`${log.score||0}%`,done,TOTAL_DEFAULT_SUBS,...habitCols,`"${notes}"`].join(",");
-  });
-  return[headers,...rows].join("\n");
-};
+const scheduleNotif=(timeStr,timerRef)=>{if(timerRef.current)clearTimeout(timerRef.current);const[h,m]=timeStr.split(":").map(Number),now=new Date(),next=new Date(now);next.setHours(h,m,0,0);if(next<=now)next.setDate(next.getDate()+1);timerRef.current=setTimeout(()=>{if(typeof Notification!=="undefined"&&Notification.permission==="granted"){if("serviceWorker"in navigator){navigator.serviceWorker.ready.then(reg=>reg.showNotification("7 Habits Tracker",{body:"Time for your daily check-in.",icon:"/icon-192.png",tag:"daily-reminder",renotify:true})).catch(()=>{}); }}scheduleNotif(timeStr,timerRef);},next-now);};
 
-const shareOrDownloadFile=async(blob,filename,title)=>{
-  try{const file=new File([blob],filename,{type:blob.type});if(navigator.share&&navigator.canShare?.({files:[file]})){await navigator.share({files:[file],title});return;}}catch{}
-  const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=filename;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
-};
+function ScoreRing({pct,size=80,T}){const r=size/2-8,c=2*Math.PI*r,fill=(pct/100)*c;const color=pct>=70?"#34d399":pct>=40?"#fbbf24":pct>0?"#f87171":T.veryDim;return(<svg width={size} height={size}><circle cx={size/2} cy={size/2} r={r} fill="none" stroke={T.trackRing} strokeWidth={6}/><circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={6} strokeDasharray={`${fill} ${c-fill}`} strokeLinecap="round" transform={`rotate(-90 ${size/2} ${size/2})`} style={{transition:"stroke-dasharray 0.5s ease"}}/><text x={size/2} y={size/2} textAnchor="middle" dy="0.35em" fill={T.text} fontSize={size*0.19} fontWeight="700" fontFamily="'Jost',sans-serif">{pct}%</text></svg>);}
 
-const exportCSV=async(logs)=>{await shareOrDownloadFile(new Blob([generateCSV(logs)],{type:"text/csv"}),"7-habits-history.csv","7 Habits History");};
-
-const exportPDF=(logs,userEmail="")=>{
-  const entries=Object.entries(logs).sort(([a],[b])=>a.localeCompare(b));
-  const total=entries.length,avg=total?Math.round(entries.reduce((s,[,v])=>s+(v.score||0),0)/total):0,streak=calcStreak(logs);
-  const rows=entries.map(([date,log])=>{
-    const done=Object.values(log.habits||{}).filter(Boolean).length,s=log.score||0;
-    const cls=s>=70?"color:#059669":s>=40?"color:#d97706":"color:#dc2626";
-    const groups=[0,1,2].map(gi=>{const hs=HABITS.filter(h=>h.gi===gi),t=hs.reduce((sum,h)=>sum+DEFAULT_SUBS[h.id].length,0),d=hs.reduce((sum,h)=>sum+DEFAULT_SUBS[h.id].filter(sub=>log.habits?.[sub.id]).length,0);return`${d}/${t}`;});
-    return`<tr><td>${date}</td><td style="font-weight:600;${cls}">${s}%</td><td>${done}/${TOTAL_DEFAULT_SUBS}</td><td>${groups[0]}</td><td>${groups[1]}</td><td>${groups[2]}</td></tr>`;
-  }).join("");
-  const html=`<!DOCTYPE html><html><head><title>7 Habits Report</title><style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:Georgia,serif;max-width:680px;margin:40px auto;padding:0 20px;color:#1a1a1a;font-size:13px;}h1{font-size:26px;margin-bottom:4px;}.meta{color:#777;margin-bottom:28px;font-size:12px;}.stats{display:flex;gap:24px;background:#f5f5f0;padding:16px 20px;border-radius:10px;margin-bottom:28px;}.stat{text-align:center;}.stat-val{font-size:22px;font-weight:700;}.stat-lbl{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.05em;}table{width:100%;border-collapse:collapse;font-size:12px;}th{background:#09090b;color:#fff;padding:8px 10px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:0.05em;}td{padding:7px 10px;border-bottom:1px solid #eee;}tr:nth-child(even) td{background:#fafaf7;}</style></head><body>
-    <h1>7 Habits Practice Report</h1>
-    <p class="meta">Generated ${new Date().toLocaleDateString("en-US",{year:"numeric",month:"long",day:"numeric"})}${userEmail?` · ${userEmail}`:""}</p>
-    <div class="stats"><div class="stat"><div class="stat-val">${total}</div><div class="stat-lbl">Days Logged</div></div><div class="stat"><div class="stat-val">${avg}%</div><div class="stat-lbl">Avg Score</div></div><div class="stat"><div class="stat-val">${streak}</div><div class="stat-lbl">Streak</div></div></div>
-    <table><tr><th>Date</th><th>Score</th><th>Actions</th><th>Private V.</th><th>Public V.</th><th>Renewal</th></tr>${rows}</table>
-    <p style="margin-top:20px;font-size:11px;color:#aaa;">Generated by 7 Habits Tracker</p></body></html>`;
-  const win=window.open("","_blank");if(win){win.document.write(html);win.document.close();setTimeout(()=>win.print(),600);}
-};
-
-/* ═══════════════════════════ NOTIFICATIONS ═══════════════════════════ */
-
-const scheduleNotif=(timeStr,timerRef)=>{
-  if(timerRef.current)clearTimeout(timerRef.current);
-  const[h,m]=timeStr.split(":").map(Number),now=new Date(),next=new Date(now);
-  next.setHours(h,m,0,0);if(next<=now)next.setDate(next.getDate()+1);
-  timerRef.current=setTimeout(()=>{
-    if(typeof Notification!=="undefined"&&Notification.permission==="granted"){if("serviceWorker"in navigator){navigator.serviceWorker.ready.then(reg=>reg.showNotification("7 Habits Tracker",{body:"Time for your daily check-in.",icon:"/icon-192.png",tag:"daily-reminder",renotify:true})).catch(()=>{});}}
-    scheduleNotif(timeStr,timerRef);
-  },next-now);
-};
-
-/* ═══════════════════════════ SCORE RING ═══════════════════════════ */
-
-function ScoreRing({pct,size=80,T}){
-  const r=size/2-8,c=2*Math.PI*r,fill=(pct/100)*c;
-  const color=pct>=70?"#34d399":pct>=40?"#fbbf24":pct>0?"#f87171":T.veryDim;
-  return(<svg width={size} height={size}><circle cx={size/2} cy={size/2} r={r} fill="none" stroke={T.trackRing} strokeWidth={6}/><circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={6} strokeDasharray={`${fill} ${c-fill}`} strokeLinecap="round" transform={`rotate(-90 ${size/2} ${size/2})`} style={{transition:"stroke-dasharray 0.5s ease"}}/><text x={size/2} y={size/2} textAnchor="middle" dy="0.35em" fill={T.text} fontSize={size*0.19} fontWeight="700" fontFamily="'Jost',sans-serif">{pct}%</text></svg>);
+function LandingPage({onSignUp,onLogin}){
+  return(
+    <div style={{minHeight:"100vh",background:"linear-gradient(180deg,#09090b 0%,#0d0d12 100%)",display:"flex",flexDirection:"column",padding:"0 28px"}}>
+      <div style={{flex:1,display:"flex",flexDirection:"column",justifyContent:"center",paddingTop:60}}>
+        <div style={{width:64,height:64,borderRadius:18,background:"#f59e0b",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:28,fontSize:28,color:"#09090b",fontWeight:700}}>✦</div>
+        <h1 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:44,fontWeight:700,color:"#fafafa",margin:"0 0 16px",lineHeight:1.1}}>Build the life<br/>Covey described.</h1>
+        <p style={{fontFamily:"'Jost',sans-serif",fontSize:17,color:"#a1a1aa",lineHeight:1.7,margin:"0 0 40px"}}>Turn one of the world's most powerful frameworks into a daily practice you can actually track.</p>
+        {[["✓","Daily checklist for all 7 habits with specific actions"],["✓","Score your practice and track your streak every day"],["✓","See your growth over weeks and months"]].map(([icon,text])=>(
+          <div key={text} style={{display:"flex",gap:14,marginBottom:14,alignItems:"flex-start"}}>
+            <span style={{color:"#34d399",fontWeight:700,fontSize:16,marginTop:1,flexShrink:0}}>{icon}</span>
+            <span style={{fontFamily:"'Jost',sans-serif",fontSize:15,color:"#71717a",lineHeight:1.5}}>{text}</span>
+          </div>
+        ))}
+      </div>
+      <div style={{paddingBottom:"calc(env(safe-area-inset-bottom,0px) + 48px)"}}>
+        <button onClick={onSignUp} style={{width:"100%",padding:"17px",borderRadius:14,background:"#f59e0b",border:"none",cursor:"pointer",fontFamily:"'Jost',sans-serif",fontSize:17,fontWeight:700,color:"#09090b",marginBottom:12}}>Create Free Account</button>
+        <button onClick={onLogin} style={{width:"100%",padding:"17px",borderRadius:14,background:"transparent",border:"1px solid #27272a",cursor:"pointer",fontFamily:"'Jost',sans-serif",fontSize:17,fontWeight:500,color:"#71717a"}}>Sign In</button>
+        <p style={{fontFamily:"'Jost',sans-serif",fontSize:12,color:"#3f3f46",textAlign:"center",marginTop:16}}>Free to use. Pro features available for power users.</p>
+      </div>
+    </div>
+  );
 }
 
-/* ═══════════════════════════ SHARED SUB-HABIT LIST ═══════════════════════════ */
-// Used by both HabitCard (list mode) and HabitSheet (grid mode)
+function TopBar({greeting,date,onMenuOpen,T,saved}){
+  return(
+    <div style={{padding:"16px 20px 12px",display:"flex",justifyContent:"space-between",alignItems:"flex-start",background:T.bg,transition:"background 0.3s"}}>
+      <div style={{flex:1,minWidth:0,paddingRight:12}}>
+        <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:24,fontWeight:700,color:T.text,lineHeight:1.2,marginBottom:3}}>{greeting}</div>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <span style={{fontFamily:"'Jost',sans-serif",fontSize:13,color:T.dim}}>{date}</span>
+          {saved&&<span style={{fontFamily:"'Jost',sans-serif",fontSize:11,color:"#34d399"}}>✓ saved</span>}
+        </div>
+      </div>
+      <button onClick={onMenuOpen} style={{width:38,height:38,borderRadius:"50%",background:T.cardInner,border:`1px solid ${T.border}`,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
+        <MoreVertical size={18} color={T.dim}/>
+      </button>
+    </div>
+  );
+}
+
+function FloatingHistoryBtn({onPress}){
+  return(
+    <button onClick={onPress} style={{position:"fixed",bottom:"calc(env(safe-area-inset-bottom,0px) + 24px)",left:"50%",transform:"translateX(-50%)",zIndex:40,width:58,height:58,borderRadius:"50%",background:"#f59e0b",border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 24px rgba(245,158,11,0.45)",WebkitTapHighlightColor:"transparent"}}>
+      <TrendingUp size={26} color="#09090b" strokeWidth={2.5}/>
+    </button>
+  );
+}
+
+function SideMenu({onNavigate,onClose,T,isPro}){
+  const[visible,setVisible]=useState(false);
+  useEffect(()=>{requestAnimationFrame(()=>requestAnimationFrame(()=>setVisible(true)));return()=>{};}, []);
+  const handleClose=()=>{setVisible(false);setTimeout(onClose,300);};
+  const handleNav=(page)=>{setVisible(false);setTimeout(()=>{onNavigate(page);onClose();},300);};
+  const items=[{id:"history",Icon:TrendingUp,label:"Progress & History"},{id:"settings",Icon:Settings,label:"Settings"},{id:"pro",Icon:Sparkles,label:isPro?"Pro Active ✦":"Get Pro",highlight:!isPro},{id:"about",Icon:BookOpen,label:"About the Book"}];
+  return(
+    <div style={{position:"fixed",inset:0,zIndex:100,display:"flex",alignItems:"flex-end"}}>
+      <div onClick={handleClose} style={{position:"absolute",inset:0,background:`rgba(0,0,0,${visible?0.65:0})`,transition:"background 0.3s"}}/>
+      <div style={{position:"relative",width:"100%",zIndex:1,background:T.sheetBg,borderRadius:"22px 22px 0 0",maxWidth:480,margin:"0 auto",paddingBottom:"calc(env(safe-area-inset-bottom,0px) + 16px)",transform:visible?"translateY(0)":"translateY(100%)",transition:"transform 0.32s cubic-bezier(0.4,0,0.2,1)",boxShadow:"0 -8px 40px rgba(0,0,0,0.35)"}}>
+        <div style={{display:"flex",justifyContent:"center",padding:"12px 0"}}><div style={{width:36,height:4,borderRadius:2,background:T.veryDim}}/></div>
+        {items.map(({id,Icon,label,highlight})=>(
+          <button key={id} onClick={()=>handleNav(id)} style={{width:"100%",background:"none",border:"none",cursor:"pointer",padding:"15px 24px",display:"flex",alignItems:"center",gap:16,textAlign:"left",borderBottom:`1px solid ${T.divider}`}}>
+            <div style={{width:40,height:40,borderRadius:12,background:highlight?"#f59e0b22":T.cardInner,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}><Icon size={20} color={highlight?"#f59e0b":T.muted}/></div>
+            <span style={{fontFamily:"'Jost',sans-serif",fontSize:16,fontWeight:500,color:highlight?"#f59e0b":T.text}}>{label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PageHeader({title,onBack,T}){
+  return(
+    <div style={{padding:"16px 20px",display:"flex",alignItems:"center",gap:12,borderBottom:`1px solid ${T.border}`,background:T.bg,transition:"background 0.3s"}}>
+      <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",padding:"4px 4px 4px 0",display:"flex",alignItems:"center"}}><ChevronLeft size={24} color={T.text}/></button>
+      <span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:24,fontWeight:700,color:T.text}}>{title}</span>
+    </div>
+  );
+}
+
+function Onboarding({onDone}){
+  const[slide,setSlide]=useState(0);
+  const[nameInput,setNameInput]=useState("");
+  const s=ONBOARDING_SLIDES[slide];
+  const isLast=slide===ONBOARDING_SLIDES.length-1;
+  return(
+    <div style={{position:"fixed",inset:0,background:"#09090b",zIndex:200,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"space-between",padding:"60px 28px 48px"}}>
+      <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",maxWidth:340,width:"100%"}}>
+        <div style={{width:80,height:80,borderRadius:"50%",background:"#18181b",border:"1px solid #27272a",display:"flex",alignItems:"center",justifyContent:"center",fontSize:32,marginBottom:32,color:"#f59e0b"}}>{s.icon}</div>
+        <h1 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:30,fontWeight:700,color:"#fafafa",textAlign:"center",margin:"0 0 16px",lineHeight:1.2,whiteSpace:"pre-line"}}>{s.title}</h1>
+        <p style={{fontFamily:"'Jost',sans-serif",fontSize:15,color:"#a1a1aa",textAlign:"center",lineHeight:1.7,margin:0}}>{s.body}</p>
+        {s.isNameStep&&<input value={nameInput} onChange={e=>setNameInput(e.target.value)} placeholder="Your first name" autoFocus style={{marginTop:24,width:"100%",padding:"14px 16px",background:"#18181b",border:"1px solid #3f3f46",borderRadius:12,fontFamily:"'Jost',sans-serif",fontSize:16,color:"#fafafa",outline:"none",textAlign:"center",boxSizing:"border-box"}}/>}
+      </div>
+      <div style={{width:"100%",maxWidth:340}}>
+        <div style={{display:"flex",justifyContent:"center",gap:6,marginBottom:28}}>{ONBOARDING_SLIDES.map((_,i)=><div key={i} style={{height:6,borderRadius:3,width:i===slide?22:6,background:i===slide?"#f59e0b":"#27272a",transition:"all 0.3s ease"}}/>)}</div>
+        <button onClick={s.isNameStep?()=>onDone(nameInput.trim()||"Friend"):isLast?()=>onDone(""):()=>setSlide(slide+1)} style={{width:"100%",padding:"15px",borderRadius:12,background:"#f59e0b",border:"none",cursor:"pointer",fontFamily:"'Jost',sans-serif",fontSize:15,fontWeight:600,color:"#09090b",marginBottom:12}}>
+          {s.isNameStep?"Let's go →":isLast?"Get Started":"Next"}
+        </button>
+        {!isLast&&!s.isNameStep&&<button onClick={()=>onDone("")} style={{width:"100%",background:"none",border:"none",cursor:"pointer",fontFamily:"'Jost',sans-serif",fontSize:13,color:"#3f3f46",padding:"8px"}}>Skip</button>}
+      </div>
+    </div>
+  );
+}
+
+function Paywall({onClose,onActivate,T,userId}){
+  const[mode,setMode]=useState("pitch"),[keyInput,setKeyInput]=useState(""),[loading,setLoading]=useState(false),[error,setError]=useState(""),[success,setSuccess]=useState(false);
+  const handleActivate=async()=>{if(!keyInput.trim()){setError("Please enter your licence key.");return;}setLoading(true);setError("");const result=await claimLicenceKey(keyInput,userId);if(result.success){setSuccess(true);setTimeout(()=>onActivate(keyInput.trim().toUpperCase()),1200);}else setError(result.error);setLoading(false);};
+  return(
+    <div style={{position:"fixed",inset:0,zIndex:100,display:"flex",alignItems:"flex-end"}}>
+      <div onClick={onClose} style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.75)"}}/>
+      <div style={{position:"relative",width:"100%",background:T.dark?"#18181b":"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 48px",maxWidth:480,margin:"0 auto",zIndex:1,maxHeight:"90vh",overflowY:"auto"}}>
+        {success?(<div style={{textAlign:"center",padding:"20px 0"}}><div style={{fontSize:48,marginBottom:12}}>✦</div><h2 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:26,fontWeight:700,color:"#34d399",margin:"0 0 8px"}}>Pro Activated</h2><p style={{fontFamily:"'Jost',sans-serif",fontSize:14,color:T.muted,margin:0}}>Welcome. Your features are now unlocked.</p></div>)
+        :mode==="pitch"?(<>
+          <div style={{textAlign:"center",marginBottom:24}}><div style={{fontSize:36,marginBottom:10}}>✦</div><h2 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:26,fontWeight:700,color:T.text,margin:"0 0 8px"}}>Upgrade to Pro</h2><p style={{fontFamily:"'Jost',sans-serif",fontSize:14,color:T.muted,margin:0,lineHeight:1.6}}>Unlock the full depth of the practice.</p></div>
+          {[["📊","Detailed Analytics","Strongest habit, weakest habit, best day, most skipped action — 30 days."],["✏️","Custom Actions","Add your own actions to any habit. Rewrite existing ones."],["📤","Export History","CSV or PDF. Share to email, WhatsApp, or any app."],["🛡️","Streak Protection","2 grace tokens per month when life happens."]].map(([icon,title,desc])=>(
+            <div key={title} style={{display:"flex",gap:12,marginBottom:14,alignItems:"flex-start"}}><div style={{fontSize:20,flexShrink:0,marginTop:2}}>{icon}</div><div><div style={{fontFamily:"'Jost',sans-serif",fontWeight:600,fontSize:14,color:T.text,marginBottom:2}}>{title}</div><div style={{fontFamily:"'Jost',sans-serif",fontSize:13,color:T.muted,lineHeight:1.5}}>{desc}</div></div></div>
+          ))}
+          <a href={SELAR_URL} target="_blank" rel="noopener noreferrer" style={{display:"block",width:"100%",padding:"14px",borderRadius:12,background:"#f59e0b",textAlign:"center",fontFamily:"'Jost',sans-serif",fontSize:16,fontWeight:600,color:"#09090b",textDecoration:"none",marginTop:8,boxSizing:"border-box"}}>Get Pro on Selar →</a>
+          <button onClick={()=>setMode("key")} style={{width:"100%",background:"none",border:`1px solid ${T.border}`,borderRadius:12,padding:"12px",marginTop:10,fontFamily:"'Jost',sans-serif",fontSize:15,color:T.textSub,cursor:"pointer"}}>I already have a licence key</button>
+        </>):(<>
+          <h2 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:24,fontWeight:700,color:T.text,margin:"0 0 6px"}}>Enter Licence Key</h2>
+          <p style={{fontFamily:"'Jost',sans-serif",fontSize:14,color:T.muted,margin:"0 0 20px",lineHeight:1.5}}>Delivered after purchase on Selar. Looks like: XXXX-XXXX-XXXX-XXXX</p>
+          <input value={keyInput} onChange={e=>setKeyInput(e.target.value.toUpperCase())} placeholder="XXXX-XXXX-XXXX-XXXX" style={{display:"block",width:"100%",padding:"13px 14px",background:T.cardInner,border:`1px solid ${T.border}`,borderRadius:10,fontFamily:"'Jost',sans-serif",fontSize:15,color:T.text,outline:"none",boxSizing:"border-box",marginBottom:12,letterSpacing:"0.05em"}}/>
+          {error&&<p style={{fontFamily:"'Jost',sans-serif",fontSize:13,color:"#f87171",margin:"0 0 12px"}}>{error}</p>}
+          <button onClick={handleActivate} disabled={loading} style={{width:"100%",padding:"14px",borderRadius:12,background:"#f59e0b",border:"none",cursor:loading?"not-allowed":"pointer",fontFamily:"'Jost',sans-serif",fontSize:15,fontWeight:600,color:"#09090b",opacity:loading?0.7:1,marginBottom:10}}>{loading?"Verifying…":"Activate Pro"}</button>
+          <button onClick={()=>{setMode("pitch");setError("");}} style={{width:"100%",background:"none",border:"none",cursor:"pointer",fontFamily:"'Jost',sans-serif",fontSize:13,color:T.dim,padding:"8px"}}>← Back</button>
+        </>)}
+      </div>
+    </div>
+  );
+}
+
+function ProPage({onBack,T,isPro,graceTokens,onOpenPaywall}){
+  const PS={fontFamily:"'Jost',sans-serif",fontSize:15,color:T.muted,lineHeight:1.7,margin:"0 0 10px"};
+  return(
+    <div style={{minHeight:"100vh",background:T.bg,transition:"background 0.3s"}}>
+      <PageHeader title="Get Pro" onBack={onBack} T={T}/>
+      <div style={{padding:"24px 20px 80px",maxWidth:480,margin:"0 auto"}}>
+        {isPro?(<div style={{textAlign:"center",padding:"32px 0"}}>
+          <div style={{fontSize:52,marginBottom:16}}>✦</div>
+          <h1 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:32,fontWeight:700,color:"#f59e0b",margin:"0 0 10px"}}>You're Pro</h1>
+          <p style={{...PS,textAlign:"center"}}>You have full access to all Pro features.</p>
+          <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,padding:"16px",marginTop:24,display:"flex",gap:12,alignItems:"center"}}>
+            <div style={{fontSize:22}}>🛡️</div>
+            <div><div style={{fontFamily:"'Jost',sans-serif",fontSize:15,color:T.text,fontWeight:500}}>{graceTokens} grace token{graceTokens!==1?"s":""} remaining</div><div style={{fontFamily:"'Jost',sans-serif",fontSize:12,color:T.dim,marginTop:2}}>Resets at the start of each month</div></div>
+          </div>
+        </div>):(<>
+          <div style={{textAlign:"center",marginBottom:32}}><div style={{fontSize:52,marginBottom:16}}>✦</div><h1 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:36,fontWeight:700,color:T.text,margin:"0 0 12px",lineHeight:1.15}}>Upgrade to Pro</h1><p style={{...PS,textAlign:"center",margin:0}}>Unlock the full depth of your practice.</p></div>
+          {[["📊","Detailed Analytics","See your strongest and weakest habit, best day of the week, and which specific action you skip most — based on the last 30 days of data."],["✏️","Custom Actions","Add your own specific actions to any of the 7 habits. Rewrite existing ones in your own words. The score updates automatically."],["📤","Export History","Download your full practice history as a CSV spreadsheet or formatted PDF report. Share to email, WhatsApp, or any app."],["🛡️","Streak Protection","2 grace tokens per month that protect your streak when life happens. Resets at the start of every month."]].map(([icon,title,desc])=>(
+            <div key={title} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,padding:"16px",marginBottom:12,display:"flex",gap:14,alignItems:"flex-start"}}>
+              <div style={{fontSize:24,flexShrink:0,marginTop:2}}>{icon}</div>
+              <div><div style={{fontFamily:"'Jost',sans-serif",fontWeight:600,fontSize:16,color:T.text,marginBottom:6}}>{title}</div><div style={{fontFamily:"'Jost',sans-serif",fontSize:14,color:T.muted,lineHeight:1.6}}>{desc}</div></div>
+            </div>
+          ))}
+          <div style={{marginTop:24}}>
+            <a href={SELAR_URL} target="_blank" rel="noopener noreferrer" style={{display:"block",width:"100%",padding:"16px",borderRadius:14,background:"#f59e0b",textAlign:"center",fontFamily:"'Jost',sans-serif",fontSize:17,fontWeight:700,color:"#09090b",textDecoration:"none",boxSizing:"border-box",marginBottom:12}}>Get Pro on Selar →</a>
+            <button onClick={onOpenPaywall} style={{width:"100%",padding:"16px",borderRadius:14,background:"none",border:`1px solid ${T.border}`,fontFamily:"'Jost',sans-serif",fontSize:16,color:T.textSub,cursor:"pointer"}}>I already have a key</button>
+          </div>
+        </>)}
+      </div>
+    </div>
+  );
+}
+
+function AboutPage({onBack,T}){
+  const[openFaq,setOpenFaq]=useState(null);
+  const PS={fontFamily:"'Jost',sans-serif",fontSize:16,color:T.muted,lineHeight:1.75,margin:"0 0 12px"};
+  const HS={fontFamily:"'Cormorant Garamond',serif",fontSize:26,fontWeight:700,color:T.text,margin:"0 0 16px"};
+  const FAQS=[{q:"Do I need to complete all actions every day?",a:"No. Consistent progress matters more than perfection. Even 8–10 actions practised intentionally each day builds real momentum over time."},{q:"How is my daily score calculated?",a:"It's the percentage of all actions you checked off — including any custom actions you've added as a Pro user. It's a mirror, not a judgment."},{q:"Will my data sync across devices?",a:"Yes. As long as you're signed in with the same account, your history syncs automatically across all your devices."},{q:"What does Pro include?",a:"Pro unlocks detailed analytics, custom actions inside each habit, history export (CSV & PDF), and streak protection grace tokens."},{q:"Why are habits grouped into three sections?",a:"Habits 1–3 (Private Victory) — master yourself. Habits 4–6 (Public Victory) — work effectively with others. Habit 7 (Renewal) — sustain everything."}];
+  return(
+    <div style={{minHeight:"100vh",background:T.bg,transition:"background 0.3s"}}>
+      <PageHeader title="About the Book" onBack={onBack} T={T}/>
+      <div style={{padding:"24px 20px 80px",maxWidth:480,margin:"0 auto"}}>
+        <div style={{textAlign:"center",marginBottom:32}}><div style={{fontSize:52,marginBottom:16}}>📖</div><h1 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:36,fontWeight:700,color:T.text,margin:"0 0 12px",lineHeight:1.15}}>7 Habits Tracker</h1><p style={{fontFamily:"'Jost',sans-serif",fontSize:16,color:T.muted,lineHeight:1.7,margin:0}}>A daily practice companion built on Stephen R. Covey's framework for enduring personal effectiveness.</p></div>
+        <div style={{height:1,background:"linear-gradient(to right, transparent, #f59e0b44, transparent)",marginBottom:32}}/>
+        <div style={{marginBottom:36}}><h2 style={HS}>About the Book</h2><p style={PS}><em style={{color:T.textSub}}>The 7 Habits of Highly Effective People</em> by Stephen R. Covey (1989) is one of the most influential personal development books ever written. Its core premise: lasting effectiveness comes from character, not technique.</p><p style={PS}>The habits are sequential — building on each other, moving you from dependence through independence to interdependence.</p></div>
+        {[{label:"Private Victory",ids:[1,2,3],desc:"Master yourself before you can effectively lead others.",color:GC[0]},{label:"Public Victory",ids:[4,5,6],desc:"Build trust and create lasting collaborative outcomes.",color:GC[1]},{label:"Renewal",ids:[7],desc:"Sustain your capacity to keep practising everything else.",color:GC[2]}].map(g=>(
+          <div key={g.label} style={{marginBottom:36}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}><div style={{width:4,height:16,borderRadius:2,background:g.color,flexShrink:0}}/><span style={{fontFamily:"'Jost',sans-serif",fontSize:13,fontWeight:600,textTransform:"uppercase",letterSpacing:"0.1em",color:g.color}}>{g.label}</span></div>
+            <p style={{...PS,marginBottom:14}}>{g.desc}</p>
+            {HABITS.filter(h=>g.ids.includes(h.id)).map(h=>(
+              <div key={h.id} style={{display:"flex",gap:14,padding:"14px 0",borderBottom:`1px solid ${T.border}`}}>
+                <div style={{width:32,height:32,borderRadius:"50%",background:g.color+"18",border:`1px solid ${g.color}40`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:13,fontWeight:700,color:g.color,fontFamily:"'Jost',sans-serif",marginTop:2}}>{h.id}</div>
+                <div><div style={{fontFamily:"'Jost',sans-serif",fontWeight:600,fontSize:17,color:T.text,marginBottom:5}}>{h.name}</div><div style={{fontFamily:"'Jost',sans-serif",fontSize:15,color:T.muted,lineHeight:1.6}}>{h.desc}</div></div>
+              </div>
+            ))}
+          </div>
+        ))}
+        <div><h2 style={HS}>FAQs</h2>{FAQS.map((f,i)=>(<div key={i} style={{borderBottom:`1px solid ${T.border}`}}><button onClick={()=>setOpenFaq(openFaq===i?null:i)} style={{width:"100%",background:"none",border:"none",cursor:"pointer",padding:"15px 0",display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,textAlign:"left"}}><span style={{fontFamily:"'Jost',sans-serif",fontSize:16,fontWeight:500,color:T.textSub,lineHeight:1.45}}>{f.q}</span><span style={{color:T.dim,fontSize:22,flexShrink:0}}>{openFaq===i?"−":"+"}</span></button>{openFaq===i&&<p style={{...PS,paddingBottom:14,marginTop:-6}}>{f.a}</p>}</div>))}</div>
+      </div>
+    </div>
+  );
+}
+
+function SettingsPage({onBack,T,dark,onToggleTheme,user,onSignOut,settings,onSave,viewMode,onSetViewMode,userName,onSaveName}){
+  const[enabled,setEnabled]=useState(settings.enabled),[time,setTime]=useState(settings.time||"20:00");
+  const[permStatus,setPermStatus]=useState(typeof Notification!=="undefined"?Notification.permission:"unsupported");
+  const[editName,setEditName]=useState(false),[nameVal,setNameVal]=useState(userName||"");
+  const PS={fontFamily:"'Jost',sans-serif",fontSize:15,color:T.muted,lineHeight:1.65,margin:"0 0 10px"};
+  const notifTimer=useRef(null);
+  const handleToggleNotif=async()=>{if(!enabled){if(typeof Notification==="undefined"){alert("Not supported.");return;}const perm=await Notification.requestPermission();setPermStatus(perm);if(perm==="granted"){setEnabled(true);onSave({enabled:true,time});}}else{setEnabled(false);onSave({enabled:false,time});}};
+  const Toggle=({on,onPress})=>(<button onClick={onPress} style={{width:52,height:30,borderRadius:15,background:on?"#f59e0b":T.veryDim,border:"none",cursor:"pointer",position:"relative",transition:"background 0.25s",flexShrink:0}}><div style={{width:24,height:24,borderRadius:"50%",background:"#fff",position:"absolute",top:3,left:on?25:3,transition:"left 0.25s",boxShadow:"0 1px 4px rgba(0,0,0,0.3)"}}/></button>);
+  return(
+    <div style={{minHeight:"100vh",background:T.bg,transition:"background 0.3s"}}>
+      <PageHeader title="Settings" onBack={onBack} T={T}/>
+      <div style={{padding:"20px 20px 80px",maxWidth:480,margin:"0 auto"}}>
+        <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:16,padding:"18px",marginBottom:14,transition:"background 0.3s"}}>
+          <div style={{fontFamily:"'Jost',sans-serif",fontSize:14,fontWeight:600,color:"#f59e0b",marginBottom:6}}>Account</div>
+          <p style={{...PS,marginBottom:14}}>Signed in as <strong style={{color:T.textSub}}>{user?.email}</strong>. Progress syncs across all your devices.</p>
+          <div style={{marginBottom:16}}>
+            <div style={{fontFamily:"'Jost',sans-serif",fontSize:12,color:T.dim,marginBottom:6,textTransform:"uppercase",letterSpacing:"0.07em"}}>Your name</div>
+            {editName?(<div style={{display:"flex",gap:8}}><input value={nameVal} onChange={e=>setNameVal(e.target.value)} style={{flex:1,padding:"10px 12px",background:T.cardInner,border:`1px solid ${T.border}`,borderRadius:10,fontFamily:"'Jost',sans-serif",fontSize:15,color:T.text,outline:"none"}} autoFocus/><button onClick={()=>{onSaveName(nameVal.trim()||"Friend");setEditName(false);}} style={{background:"#f59e0b",border:"none",borderRadius:10,padding:"10px 16px",fontFamily:"'Jost',sans-serif",fontSize:14,fontWeight:600,color:"#09090b",cursor:"pointer"}}>Save</button></div>)
+            :(<div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontFamily:"'Jost',sans-serif",fontSize:16,color:T.text}}>{userName||"Not set"}</span><button onClick={()=>setEditName(true)} style={{background:"none",border:`1px solid ${T.border}`,borderRadius:8,padding:"6px 12px",fontFamily:"'Jost',sans-serif",fontSize:13,color:T.dim,cursor:"pointer"}}>Edit</button></div>)}
+          </div>
+          <button onClick={onSignOut} style={{background:T.cardInner,border:`1px solid ${T.border}`,borderRadius:10,padding:"11px 18px",fontFamily:"'Jost',sans-serif",fontSize:14,color:"#f87171",cursor:"pointer",fontWeight:500}}>Sign out</button>
+        </div>
+        <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:16,padding:"18px",marginBottom:14,transition:"background 0.3s"}}>
+          <div style={{fontFamily:"'Jost',sans-serif",fontSize:14,fontWeight:600,color:"#f59e0b",marginBottom:6}}>Checklist Layout</div>
+          <p style={{...PS,marginBottom:14}}>Choose how habits appear in your daily check-in.</p>
+          <div style={{display:"flex",gap:6,background:T.cardInner,borderRadius:12,padding:4}}>
+            {[{id:"list",icon:"☰",label:"List"},{id:"grid",icon:"⊞",label:"Grid"}].map(v=>(
+              <button key={v.id} onClick={()=>onSetViewMode(v.id)} style={{flex:1,padding:"10px 8px",borderRadius:9,background:viewMode===v.id?T.dark?"#27272a":"#fff":"transparent",border:viewMode===v.id?`1px solid ${T.border}`:"1px solid transparent",cursor:"pointer",fontFamily:"'Jost',sans-serif",fontSize:15,color:viewMode===v.id?T.text:T.dim,fontWeight:viewMode===v.id?600:400,display:"flex",alignItems:"center",justifyContent:"center",gap:8,transition:"background 0.2s,color 0.2s",boxShadow:viewMode===v.id?"0 1px 4px rgba(0,0,0,0.15)":"none"}}><span style={{fontSize:16}}>{v.icon}</span>{v.label}</button>
+            ))}
+          </div>
+        </div>
+        <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:16,padding:"18px",marginBottom:14,transition:"background 0.3s"}}>
+          <div style={{fontFamily:"'Jost',sans-serif",fontSize:14,fontWeight:600,color:"#f59e0b",marginBottom:16}}>Appearance</div>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><span style={{fontFamily:"'Jost',sans-serif",fontSize:16,color:T.textSub}}>{dark?"🌙 Dark mode":"☀️ Light mode"}</span><Toggle on={dark} onPress={onToggleTheme}/></div>
+        </div>
+        <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:16,padding:"18px",marginBottom:14,transition:"background 0.3s"}}>
+          <div style={{fontFamily:"'Jost',sans-serif",fontSize:14,fontWeight:600,color:"#f59e0b",marginBottom:6}}>Daily Reminder</div>
+          <p style={{...PS,marginBottom:16}}>Get a notification each day at your chosen time.</p>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:enabled?18:0}}><span style={{fontFamily:"'Jost',sans-serif",fontSize:16,color:T.textSub}}>Enable reminders</span><Toggle on={enabled} onPress={handleToggleNotif}/></div>
+          {enabled&&(<div><label style={{fontFamily:"'Jost',sans-serif",fontSize:12,color:T.dim,display:"block",marginBottom:8,textTransform:"uppercase",letterSpacing:"0.07em"}}>Reminder time</label><input type="time" value={time} onChange={e=>{setTime(e.target.value);if(enabled)onSave({enabled:true,time:e.target.value});}} style={{background:T.cardInner,border:`1px solid ${T.border}`,borderRadius:10,padding:"13px 14px",fontFamily:"'Jost',sans-serif",fontSize:17,color:T.text,outline:"none",width:"100%",boxSizing:"border-box",colorScheme:dark?"dark":"light"}}/></div>)}
+          {permStatus==="denied"&&<p style={{fontFamily:"'Jost',sans-serif",fontSize:13,color:"#f87171",margin:"12px 0 0",lineHeight:1.55}}>Notifications blocked. Enable them in your browser or phone settings.</p>}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function SubHabitList({habitId,defaultSubs,customActionsForHabit,checkedMap,onToggle,customSubs,onUpdateCustomSub,isPro,onRequirePro,onAddAction,onDeleteAction,T}){
   const gc=GC[HABITS.find(h=>h.id===habitId)?.gi??0];
   const[editingId,setEditingId]=useState(null),[editVal,setEditVal]=useState("");
   const[addingAction,setAddingAction]=useState(false),[newActionText,setNewActionText]=useState("");
-
   const getSubText=s=>customSubs?.[s.id]||s.text;
   const startEdit=s=>{if(!isPro){onRequirePro();return;}setEditingId(s.id);setEditVal(getSubText(s));};
   const saveEdit=sid=>{const def=defaultSubs.find(s=>s.id===sid)?.text||"";onUpdateCustomSub(sid,editVal.trim()||def);setEditingId(null);};
-
-  const handleSaveAction=()=>{
-    if(!newActionText.trim())return;
-    onAddAction(habitId,newActionText.trim());
-    setNewActionText("");setAddingAction(false);
-  };
-
-  const SubRow=({s,isCustomAction=false})=>(
-    <div style={{padding:"10px 0",borderBottom:`1px solid ${T.divider}`}}>
-      {editingId===s.id?(
-        <div>
-          <textarea value={editVal} onChange={e=>setEditVal(e.target.value)} style={{display:"block",width:"100%",background:T.cardInner,border:`1px solid ${T.border}`,borderRadius:8,padding:"8px 10px",fontFamily:"'Jost',sans-serif",fontSize:13,color:T.text,resize:"none",height:56,outline:"none",lineHeight:1.5,boxSizing:"border-box",marginBottom:6}}/>
-          <div style={{display:"flex",gap:8}}>
-            <button onClick={()=>saveEdit(s.id)} style={{background:gc,border:"none",borderRadius:6,padding:"5px 12px",fontFamily:"'Jost',sans-serif",fontSize:12,fontWeight:600,color:"#09090b",cursor:"pointer"}}>Save</button>
-            <button onClick={()=>{onUpdateCustomSub(s.id,null);setEditingId(null);}} style={{background:T.cardInner,border:`1px solid ${T.border}`,borderRadius:6,padding:"5px 12px",fontFamily:"'Jost',sans-serif",fontSize:12,color:T.muted,cursor:"pointer"}}>Reset</button>
-            <button onClick={()=>setEditingId(null)} style={{background:"none",border:"none",cursor:"pointer",fontFamily:"'Jost',sans-serif",fontSize:12,color:T.dim}}>Cancel</button>
-          </div>
-        </div>
-      ):(
-        <div style={{display:"flex",gap:10,alignItems:"flex-start"}}>
-          <div onClick={()=>onToggle(s.id)} style={{cursor:"pointer",flexShrink:0,marginTop:1}}>
-            {checkedMap[s.id]
-              ?<div style={{width:22,height:22,borderRadius:"50%",background:gc,display:"flex",alignItems:"center",justifyContent:"center"}}><svg width="11" height="11" viewBox="0 0 14 14"><path d="M2 7l4 4 6-6" stroke={T.dark?"#09090b":"#fff"} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg></div>
-              :<div style={{width:22,height:22,borderRadius:"50%",border:`2px solid ${T.veryDim}`}}/>
-            }
-          </div>
-          <span onClick={()=>onToggle(s.id)} style={{flex:1,fontFamily:"'Jost',sans-serif",fontSize:13,color:checkedMap[s.id]?T.dim:T.textSub,lineHeight:1.55,cursor:"pointer",transition:"color 0.2s"}}>
-            <em style={{fontStyle:"normal",fontWeight:700,color:checkedMap[s.id]?T.dim:gc}}>I </em>
-            {isCustomAction?s.text:getSubText(s)} today.
-            {!isCustomAction&&customSubs?.[s.id]&&<span style={{color:gc,marginLeft:4,fontSize:10}}>✦</span>}
-            {isCustomAction&&<span style={{background:gc+"22",color:gc,fontSize:9,padding:"1px 5px",borderRadius:4,marginLeft:6,fontWeight:600}}>custom</span>}
-          </span>
-          {/* Edit button for default subs (Pro) or Delete for custom actions */}
-          {isCustomAction?(
-            <button onClick={()=>onDeleteAction(habitId,s.id)} style={{background:"none",border:"none",cursor:"pointer",padding:"0 0 0 4px",fontSize:12,color:T.veryDim,flexShrink:0,lineHeight:1}}>✕</button>
-          ):(
-            <button onClick={()=>startEdit(s)} style={{background:"none",border:"none",cursor:"pointer",padding:"0 0 0 4px",fontSize:12,opacity:0.4,flexShrink:0}}>{isPro?"✏️":"🔒"}</button>
-          )}
-        </div>
-      )}
-    </div>
-  );
-
-  return(
-    <div>
-      {/* Default sub-habits */}
-      {defaultSubs.map(s=><SubRow key={s.id} s={s}/>)}
-
-      {/* Custom actions for this habit */}
-      {customActionsForHabit.map(a=><SubRow key={a.id} s={a} isCustomAction/>)}
-
-      {/* Add action button */}
-      <div style={{paddingTop:10}}>
-        {addingAction?(
-          <div>
-            <div style={{fontFamily:"'Jost',sans-serif",fontSize:11,color:T.dim,marginBottom:6}}>
-              <em style={{fontStyle:"normal",fontWeight:700,color:gc}}>I </em>... today.
-            </div>
-            <textarea
-              value={newActionText}
-              onChange={e=>setNewActionText(e.target.value)}
-              placeholder="describe what you actually did..."
-              autoFocus
-              style={{display:"block",width:"100%",background:T.cardInner,border:`1px solid ${gc}66`,borderRadius:10,padding:"10px 12px",fontFamily:"'Jost',sans-serif",fontSize:13,color:T.text,resize:"none",height:64,outline:"none",lineHeight:1.5,boxSizing:"border-box",marginBottom:8}}
-            />
-            <div style={{display:"flex",gap:8}}>
-              <button onClick={handleSaveAction} style={{background:gc,border:"none",borderRadius:8,padding:"7px 16px",fontFamily:"'Jost',sans-serif",fontSize:13,fontWeight:600,color:"#09090b",cursor:"pointer"}}>Add</button>
-              <button onClick={()=>{setAddingAction(false);setNewActionText("");}} style={{background:"none",border:`1px solid ${T.border}`,borderRadius:8,padding:"7px 12px",fontFamily:"'Jost',sans-serif",fontSize:13,color:T.dim,cursor:"pointer"}}>Cancel</button>
-            </div>
-          </div>
-        ):(
-          isPro?(
-            <button onClick={()=>setAddingAction(true)} style={{background:"none",border:`1px dashed ${T.border}`,borderRadius:10,padding:"8px 14px",fontFamily:"'Jost',sans-serif",fontSize:12,color:T.dim,cursor:"pointer",display:"flex",alignItems:"center",gap:6,transition:"border-color 0.2s"}}>
-              <span style={{color:gc,fontWeight:700,fontSize:14}}>+</span> Add custom action
-            </button>
-          ):(
-            <button onClick={onRequirePro} style={{background:"none",border:`1px dashed ${T.border}`,borderRadius:10,padding:"8px 14px",fontFamily:"'Jost',sans-serif",fontSize:12,color:T.veryDim,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
-              🔒 Add custom action — Pro
-            </button>
-          )
-        )}
-      </div>
-    </div>
-  );
+  const handleSaveAction=()=>{if(!newActionText.trim())return;onAddAction(habitId,newActionText.trim());setNewActionText("");setAddingAction(false);};
+  const SubRow=({s,isCustomAction=false})=>(<div style={{padding:"11px 0",borderBottom:`1px solid ${T.divider}`}}>
+    {editingId===s.id?(<div><textarea value={editVal} onChange={e=>setEditVal(e.target.value)} style={{display:"block",width:"100%",background:T.cardInner,border:`1px solid ${T.border}`,borderRadius:8,padding:"8px 10px",fontFamily:"'Jost',sans-serif",fontSize:14,color:T.text,resize:"none",height:60,outline:"none",lineHeight:1.5,boxSizing:"border-box",marginBottom:8}}/><div style={{display:"flex",gap:8}}><button onClick={()=>saveEdit(s.id)} style={{background:gc,border:"none",borderRadius:6,padding:"6px 14px",fontFamily:"'Jost',sans-serif",fontSize:13,fontWeight:600,color:"#09090b",cursor:"pointer"}}>Save</button><button onClick={()=>{onUpdateCustomSub(s.id,null);setEditingId(null);}} style={{background:T.cardInner,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 12px",fontFamily:"'Jost',sans-serif",fontSize:13,color:T.muted,cursor:"pointer"}}>Reset</button><button onClick={()=>setEditingId(null)} style={{background:"none",border:"none",cursor:"pointer",fontFamily:"'Jost',sans-serif",fontSize:13,color:T.dim}}>Cancel</button></div></div>)
+    :(<div style={{display:"flex",gap:12,alignItems:"flex-start"}}>
+      <div onClick={()=>onToggle(s.id)} style={{cursor:"pointer",flexShrink:0,marginTop:1}}>{checkedMap[s.id]?<div style={{width:24,height:24,borderRadius:"50%",background:gc,display:"flex",alignItems:"center",justifyContent:"center"}}><svg width="12" height="12" viewBox="0 0 14 14"><path d="M2 7l4 4 6-6" stroke={T.dark?"#09090b":"#fff"} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg></div>:<div style={{width:24,height:24,borderRadius:"50%",border:`2px solid ${T.veryDim}`}}/>}</div>
+      <span onClick={()=>onToggle(s.id)} style={{flex:1,fontFamily:"'Jost',sans-serif",fontSize:14,color:checkedMap[s.id]?T.dim:T.textSub,lineHeight:1.55,cursor:"pointer",transition:"color 0.2s"}}><em style={{fontStyle:"normal",fontWeight:700,color:checkedMap[s.id]?T.dim:gc}}>I </em>{isCustomAction?s.text:getSubText(s)} today.{isCustomAction&&<span style={{background:gc+"22",color:gc,fontSize:10,padding:"1px 5px",borderRadius:4,marginLeft:6,fontWeight:600}}>custom</span>}{!isCustomAction&&customSubs?.[s.id]&&<span style={{color:gc,marginLeft:4,fontSize:10}}>✦</span>}</span>
+      {isCustomAction?(<button onClick={()=>onDeleteAction(habitId,s.id)} style={{background:"none",border:"none",cursor:"pointer",padding:"0 0 0 6px",fontSize:13,color:T.veryDim,flexShrink:0}}>✕</button>):(<button onClick={()=>startEdit(s)} style={{background:"none",border:"none",cursor:"pointer",padding:"0 0 0 6px",fontSize:13,opacity:0.4,flexShrink:0}}>{isPro?"✏️":"🔒"}</button>)}
+    </div>)}
+  </div>);
+  return(<div>{defaultSubs.map(s=><SubRow key={s.id} s={s}/>)}{customActionsForHabit.map(a=><SubRow key={a.id} s={a} isCustomAction/>)}
+    <div style={{paddingTop:12}}>{addingAction?(<div><div style={{fontFamily:"'Jost',sans-serif",fontSize:13,color:T.dim,marginBottom:6}}><em style={{fontStyle:"normal",fontWeight:700,color:gc}}>I </em>... today.</div><textarea value={newActionText} onChange={e=>setNewActionText(e.target.value)} placeholder="describe what you actually did..." autoFocus style={{display:"block",width:"100%",background:T.cardInner,border:`1px solid ${gc}66`,borderRadius:10,padding:"10px 12px",fontFamily:"'Jost',sans-serif",fontSize:14,color:T.text,resize:"none",height:68,outline:"none",lineHeight:1.5,boxSizing:"border-box",marginBottom:10}}/><div style={{display:"flex",gap:8}}><button onClick={handleSaveAction} style={{background:gc,border:"none",borderRadius:8,padding:"8px 18px",fontFamily:"'Jost',sans-serif",fontSize:14,fontWeight:600,color:"#09090b",cursor:"pointer"}}>Add</button><button onClick={()=>{setAddingAction(false);setNewActionText("");}} style={{background:"none",border:`1px solid ${T.border}`,borderRadius:8,padding:"8px 14px",fontFamily:"'Jost',sans-serif",fontSize:14,color:T.dim,cursor:"pointer"}}>Cancel</button></div></div>)
+    :(isPro?<button onClick={()=>setAddingAction(true)} style={{background:"none",border:`1px dashed ${T.border}`,borderRadius:10,padding:"9px 14px",fontFamily:"'Jost',sans-serif",fontSize:13,color:T.dim,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}><span style={{color:gc,fontWeight:700,fontSize:15}}>+</span> Add custom action</button>:<button onClick={onRequirePro} style={{background:"none",border:`1px dashed ${T.border}`,borderRadius:10,padding:"9px 14px",fontFamily:"'Jost',sans-serif",fontSize:13,color:T.veryDim,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>🔒 Add custom action — Pro</button>)}</div>
+  </div>);
 }
-
-/* ═══════════════════════════ GRID HABIT CARD ═══════════════════════════ */
 
 function GridHabitCard({habit,subs,customActionsCount,checkedMap,T,onClick}){
   const gc=GC[habit.gi];
-  const allSubs=[...subs,...Array(customActionsCount)]; // just for length
-  const done=subs.filter(s=>checkedMap[s.id]).length; // simplified dot display
   const totalForHabit=subs.length+customActionsCount;
+  const done=subs.filter(s=>checkedMap[s.id]).length;
   const pct=totalForHabit>0?Math.round((done/totalForHabit)*100):0;
   const allDone=done===totalForHabit&&totalForHabit>0;
-
-  return(
-    <div onClick={onClick} style={{background:allDone?gc+"18":T.card,border:`1px solid ${allDone?gc+"66":T.border}`,borderRadius:16,padding:"14px 13px 42px",cursor:"pointer",position:"relative",overflow:"hidden",minHeight:148,transition:"border-color 0.25s,background 0.25s",WebkitTapHighlightColor:"transparent"}}
-      onTouchStart={e=>e.currentTarget.style.transform="scale(0.97)"} onTouchEnd={e=>e.currentTarget.style.transform="scale(1)"}>
-      <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:allDone?gc:gc+"44",borderRadius:"16px 16px 0 0"}}/>
-      <div style={{width:26,height:26,borderRadius:"50%",background:allDone?gc:T.cardInner,color:allDone?(T.dark?"#09090b":"#fff"):T.dim,border:`1px solid ${allDone?"transparent":T.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,fontFamily:"'Jost',sans-serif",marginBottom:10,transition:"background 0.2s"}}>{habit.id}</div>
-      <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:15,fontWeight:700,color:T.text,lineHeight:1.25,marginBottom:4,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{habit.name}</div>
-      <div style={{fontFamily:"'Jost',sans-serif",fontSize:10,color:gc,lineHeight:1.3}}>{habit.tag}</div>
-      <div style={{position:"absolute",bottom:12,left:13,right:13}}>
-        <div style={{height:2,background:T.divider,borderRadius:1,marginBottom:6,overflow:"hidden"}}><div style={{height:"100%",width:`${pct}%`,background:gc,borderRadius:1,transition:"width 0.4s ease"}}/></div>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <div style={{display:"flex",gap:3}}>{subs.map(s=><div key={s.id} style={{width:5,height:5,borderRadius:"50%",background:checkedMap[s.id]?gc:T.veryDim,transition:"background 0.2s"}}/>)}{customActionsCount>0&&<div style={{width:5,height:5,borderRadius:"50%",background:gc+"44"}}/>}</div>
-          <span style={{fontFamily:"'Jost',sans-serif",fontSize:9,color:T.dim,fontWeight:600}}>{done}/{totalForHabit}</span>
-        </div>
-      </div>
+  return(<div onClick={onClick} style={{background:allDone?gc+"18":T.card,border:`1px solid ${allDone?gc+"66":T.border}`,borderRadius:14,padding:"10px 10px 36px",cursor:"pointer",position:"relative",overflow:"hidden",minHeight:130,transition:"border-color 0.25s,background 0.25s",WebkitTapHighlightColor:"transparent"}} onTouchStart={e=>e.currentTarget.style.transform="scale(0.96)"} onTouchEnd={e=>e.currentTarget.style.transform="scale(1)"}>
+    <div style={{position:"absolute",top:0,left:0,right:0,height:3,background:allDone?gc:gc+"44",borderRadius:"14px 14px 0 0"}}/>
+    <div style={{width:22,height:22,borderRadius:"50%",background:allDone?gc:T.cardInner,color:allDone?(T.dark?"#09090b":"#fff"):T.dim,border:`1px solid ${allDone?"transparent":T.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,fontFamily:"'Jost',sans-serif",marginBottom:8,transition:"background 0.2s"}}>{habit.id}</div>
+    <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:14,fontWeight:700,color:T.text,lineHeight:1.25,marginBottom:3,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{habit.name}</div>
+    <div style={{fontFamily:"'Jost',sans-serif",fontSize:9,color:gc,lineHeight:1.3}}>{habit.tag}</div>
+    <div style={{position:"absolute",bottom:10,left:10,right:10}}>
+      <div style={{height:2,background:T.divider,borderRadius:1,marginBottom:5,overflow:"hidden"}}><div style={{height:"100%",width:`${pct}%`,background:gc,borderRadius:1,transition:"width 0.4s ease"}}/></div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><div style={{display:"flex",gap:2}}>{subs.map(s=><div key={s.id} style={{width:4,height:4,borderRadius:"50%",background:checkedMap[s.id]?gc:T.veryDim}}/>)}</div><span style={{fontFamily:"'Jost',sans-serif",fontSize:9,color:T.dim,fontWeight:600}}>{done}/{totalForHabit}</span></div>
     </div>
-  );
+  </div>);
 }
-
-/* ═══════════════════════════ HABIT SHEET (grid popup) ═══════════════════════════ */
 
 function HabitSheet({habit,subs,customActionsForHabit,checkedMap,onToggle,note,onNote,T,isPro,customSubs,onUpdateCustomSub,onRequirePro,onAddAction,onDeleteAction,onClose}){
-  const[visible,setVisible]=useState(false);
-  const[refExp,setRefExp]=useState(!!note);
+  const[visible,setVisible]=useState(false),[refExp,setRefExp]=useState(!!note);
   const gc=GC[habit.gi];
-  const done=[...subs,...customActionsForHabit].filter(s=>checkedMap[s.id]).length;
-  const total=subs.length+customActionsForHabit.length;
-
+  const allSubs=[...subs,...customActionsForHabit];
+  const done=allSubs.filter(s=>checkedMap[s.id]).length,total=allSubs.length;
   useEffect(()=>{requestAnimationFrame(()=>requestAnimationFrame(()=>setVisible(true)));return()=>{};}, []);
   const handleClose=()=>{setVisible(false);setTimeout(onClose,320);};
-
-  return(
-    <div style={{position:"fixed",inset:0,zIndex:100,display:"flex",alignItems:"flex-end"}}>
-      <div onClick={handleClose} style={{position:"absolute",inset:0,background:`rgba(0,0,0,${visible?0.65:0})`,transition:"background 0.32s ease"}}/>
-      <div style={{position:"relative",width:"100%",zIndex:1,background:T.sheetBg,borderRadius:"22px 22px 0 0",maxWidth:480,margin:"0 auto",maxHeight:"85vh",overflowY:"auto",transform:visible?"translateY(0)":"translateY(100%)",transition:"transform 0.35s cubic-bezier(0.4,0,0.2,1)",paddingBottom:"calc(env(safe-area-inset-bottom,0px) + 24px)",boxShadow:"0 -8px 40px rgba(0,0,0,0.4)"}}>
-        <div style={{display:"flex",justifyContent:"center",padding:"12px 0 0"}}><div style={{width:36,height:4,borderRadius:2,background:T.veryDim}}/></div>
-        <div style={{padding:"14px 20px 0",display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-          <div style={{flex:1,minWidth:0,paddingRight:12}}>
-            <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}>
-              <div style={{width:3,height:12,borderRadius:2,background:gc,flexShrink:0}}/>
-              <span style={{fontFamily:"'Jost',sans-serif",fontSize:10,fontWeight:600,textTransform:"uppercase",letterSpacing:"0.09em",color:gc}}>{GROUP_LABELS[habit.gi]}</span>
-            </div>
-            <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:22,fontWeight:700,color:T.text,lineHeight:1.2,marginBottom:2}}>{habit.name}</div>
-            <div style={{fontFamily:"'Jost',sans-serif",fontSize:11,color:T.dim}}>{habit.tag}</div>
-          </div>
-          <button onClick={handleClose} style={{width:32,height:32,borderRadius:"50%",background:T.cardInner,border:`1px solid ${T.border}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",color:T.dim,fontSize:14,flexShrink:0}}>✕</button>
+  return(<div style={{position:"fixed",inset:0,zIndex:100,display:"flex",alignItems:"flex-end"}}>
+    <div onClick={handleClose} style={{position:"absolute",inset:0,background:`rgba(0,0,0,${visible?0.65:0})`,transition:"background 0.32s ease"}}/>
+    <div style={{position:"relative",width:"100%",zIndex:1,background:T.sheetBg,borderRadius:"22px 22px 0 0",maxWidth:480,margin:"0 auto",maxHeight:"85vh",overflowY:"auto",transform:visible?"translateY(0)":"translateY(100%)",transition:"transform 0.35s cubic-bezier(0.4,0,0.2,1)",paddingBottom:"calc(env(safe-area-inset-bottom,0px) + 24px)",boxShadow:"0 -8px 40px rgba(0,0,0,0.4)"}}>
+      <div style={{display:"flex",justifyContent:"center",padding:"12px 0"}}><div style={{width:36,height:4,borderRadius:2,background:T.veryDim}}/></div>
+      <div style={{padding:"14px 20px 0",display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+        <div style={{flex:1,minWidth:0,paddingRight:12}}>
+          <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:4}}><div style={{width:3,height:12,borderRadius:2,background:gc,flexShrink:0}}/><span style={{fontFamily:"'Jost',sans-serif",fontSize:11,fontWeight:600,textTransform:"uppercase",letterSpacing:"0.09em",color:gc}}>{GROUP_LABELS[habit.gi]}</span></div>
+          <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:22,fontWeight:700,color:T.text,lineHeight:1.2,marginBottom:2}}>{habit.name}</div>
+          <div style={{fontFamily:"'Jost',sans-serif",fontSize:12,color:T.dim}}>{habit.tag}</div>
         </div>
-        <div style={{padding:"12px 20px 0"}}>
-          <div style={{height:3,background:T.divider,borderRadius:2,overflow:"hidden",marginBottom:6}}><div style={{height:"100%",width:total>0?`${(done/total)*100}%`:"0%",background:gc,borderRadius:2,transition:"width 0.4s ease"}}/></div>
-          <div style={{fontFamily:"'Jost',sans-serif",fontSize:11,color:T.dim}}>{done} of {total}{done===total&&total>0?" · ✦ All done":" remaining"}</div>
-        </div>
-        <div style={{padding:"8px 20px 0"}}>
-          <SubHabitList habitId={habit.id} defaultSubs={subs} customActionsForHabit={customActionsForHabit}
-            checkedMap={checkedMap} onToggle={onToggle} customSubs={customSubs}
-            onUpdateCustomSub={onUpdateCustomSub} isPro={isPro} onRequirePro={onRequirePro}
-            onAddAction={onAddAction} onDeleteAction={onDeleteAction} T={T}/>
-        </div>
-        <div style={{padding:"12px 20px 0"}}>
-          <button onClick={()=>setRefExp(!refExp)} style={{background:"none",border:"none",cursor:"pointer",padding:0,fontFamily:"'Jost',sans-serif",fontSize:12,color:refExp?gc:T.veryDim,display:"flex",alignItems:"center",gap:4}}>
-            <span>{refExp?"▾":"▸"}</span><span>{note?"Edit reflection":"Add reflection"}</span>
-          </button>
-          {refExp&&<textarea value={note} onChange={e=>onNote(e.target.value)} placeholder="What did this look like for you today?" style={{display:"block",width:"100%",marginTop:8,background:T.cardInner,border:`1px solid ${T.border}`,borderRadius:10,padding:"10px 12px",fontFamily:"'Jost',sans-serif",fontSize:13,color:T.text,resize:"none",height:80,outline:"none",lineHeight:1.5,boxSizing:"border-box"}}/>}
-          {!refExp&&note&&<p style={{fontFamily:"'Jost',sans-serif",fontSize:12,color:T.veryDim,margin:"6px 0 0",lineHeight:1.4,fontStyle:"italic"}}>"{note.length>80?note.slice(0,80)+"…":note}"</p>}
-        </div>
+        <button onClick={handleClose} style={{width:32,height:32,borderRadius:"50%",background:T.cardInner,border:`1px solid ${T.border}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",color:T.dim,fontSize:14,flexShrink:0}}>✕</button>
+      </div>
+      <div style={{padding:"12px 20px 0"}}>
+        <div style={{height:3,background:T.divider,borderRadius:2,overflow:"hidden",marginBottom:6}}><div style={{height:"100%",width:total>0?`${(done/total)*100}%`:"0%",background:gc,borderRadius:2,transition:"width 0.4s ease"}}/></div>
+        <div style={{fontFamily:"'Jost',sans-serif",fontSize:12,color:T.dim}}>{done} of {total}{done===total&&total>0?" · ✦ All done":" remaining"}</div>
+      </div>
+      <div style={{padding:"8px 20px 0"}}><SubHabitList habitId={habit.id} defaultSubs={subs} customActionsForHabit={customActionsForHabit} checkedMap={checkedMap} onToggle={onToggle} customSubs={customSubs} onUpdateCustomSub={onUpdateCustomSub} isPro={isPro} onRequirePro={onRequirePro} onAddAction={onAddAction} onDeleteAction={onDeleteAction} T={T}/></div>
+      <div style={{padding:"12px 20px 0"}}>
+        <button onClick={()=>setRefExp(!refExp)} style={{background:"none",border:"none",cursor:"pointer",padding:0,fontFamily:"'Jost',sans-serif",fontSize:13,color:refExp?gc:T.veryDim,display:"flex",alignItems:"center",gap:4}}><span>{refExp?"▾":"▸"}</span><span>{note?"Edit reflection":"Add reflection"}</span></button>
+        {refExp&&<textarea value={note} onChange={e=>onNote(e.target.value)} placeholder="What did this look like for you today?" style={{display:"block",width:"100%",marginTop:8,background:T.cardInner,border:`1px solid ${T.border}`,borderRadius:10,padding:"10px 12px",fontFamily:"'Jost',sans-serif",fontSize:14,color:T.text,resize:"none",height:80,outline:"none",lineHeight:1.5,boxSizing:"border-box"}}/>}
+        {!refExp&&note&&<p style={{fontFamily:"'Jost',sans-serif",fontSize:13,color:T.veryDim,margin:"6px 0 0",lineHeight:1.4,fontStyle:"italic"}}>"{note.length>80?note.slice(0,80)+"…":note}"</p>}
       </div>
     </div>
-  );
+  </div>);
 }
 
-/* ═══════════════════════════ PAYWALL ═══════════════════════════ */
-
-function Paywall({onClose,onActivate,T}){
-  const[mode,setMode]=useState("pitch"),[keyInput,setKeyInput]=useState(""),[loading,setLoading]=useState(false),[error,setError]=useState(""),[success,setSuccess]=useState(false);
-  const handleActivate=async()=>{if(!keyInput.trim()){setError("Please enter your licence key.");return;}setLoading(true);setError("");const valid=await verifyKey(keyInput);if(valid){setSuccess(true);setTimeout(()=>onActivate(keyInput.trim().toUpperCase()),1200);}else setError("Invalid key. Check and try again.");setLoading(false);};
-
-  return(
-    <div style={{position:"fixed",inset:0,zIndex:100,display:"flex",alignItems:"flex-end"}}>
-      <div onClick={onClose} style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.75)"}}/>
-      <div style={{position:"relative",width:"100%",background:T.dark?"#18181b":"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 48px",maxWidth:480,margin:"0 auto",zIndex:1,maxHeight:"90vh",overflowY:"auto"}}>
-        {success?(
-          <div style={{textAlign:"center",padding:"20px 0"}}><div style={{fontSize:48,marginBottom:12}}>✦</div><h2 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:26,fontWeight:700,color:"#34d399",margin:"0 0 8px"}}>Pro Activated</h2><p style={{fontFamily:"'Jost',sans-serif",fontSize:14,color:T.muted,margin:0}}>Welcome. Your features are now unlocked.</p></div>
-        ):mode==="pitch"?(
-          <>
-            <div style={{textAlign:"center",marginBottom:24}}>
-              <div style={{fontSize:36,marginBottom:10}}>✦</div>
-              <h2 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:26,fontWeight:700,color:T.text,margin:"0 0 8px"}}>Upgrade to Pro</h2>
-              <p style={{fontFamily:"'Jost',sans-serif",fontSize:13,color:T.muted,margin:0,lineHeight:1.6}}>Unlock the full depth of the practice.</p>
-            </div>
-            {[["📊","Detailed Analytics","Strongest habit, weakest habit, best day, and most skipped action over 30 days."],
-              ["✏️","Custom Actions","Add your own specific actions to any habit. Rewrite existing ones. The score updates automatically."],
-              ["📤","Export History","Download as CSV or PDF. Share to email, WhatsApp, or any app."],
-              ["🛡️","Streak Protection","2 grace tokens per month when life happens."],
-            ].map(([icon,title,desc])=>(
-              <div key={title} style={{display:"flex",gap:12,marginBottom:14,alignItems:"flex-start"}}>
-                <div style={{fontSize:20,flexShrink:0,marginTop:2}}>{icon}</div>
-                <div><div style={{fontFamily:"'Jost',sans-serif",fontWeight:600,fontSize:14,color:T.text,marginBottom:2}}>{title}</div><div style={{fontFamily:"'Jost',sans-serif",fontSize:12,color:T.muted,lineHeight:1.5}}>{desc}</div></div>
-              </div>
-            ))}
-            <a href={SELAR_URL} target="_blank" rel="noopener noreferrer" style={{display:"block",width:"100%",padding:"13px",borderRadius:12,background:"#f59e0b",textAlign:"center",fontFamily:"'Jost',sans-serif",fontSize:15,fontWeight:600,color:"#09090b",textDecoration:"none",marginTop:8,boxSizing:"border-box"}}>Get Pro on Selar →</a>
-            <button onClick={()=>setMode("key")} style={{width:"100%",background:"none",border:`1px solid ${T.border}`,borderRadius:12,padding:"11px",marginTop:10,fontFamily:"'Jost',sans-serif",fontSize:14,color:T.textSub,cursor:"pointer"}}>I already have a licence key</button>
-          </>
-        ):(
-          <>
-            <h2 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:24,fontWeight:700,color:T.text,margin:"0 0 6px"}}>Enter Licence Key</h2>
-            <p style={{fontFamily:"'Jost',sans-serif",fontSize:13,color:T.muted,margin:"0 0 20px",lineHeight:1.5}}>Delivered after purchase on Selar. Looks like: XXXX-XXXX-XXXX-XXXX</p>
-            <input value={keyInput} onChange={e=>setKeyInput(e.target.value.toUpperCase())} placeholder="XXXX-XXXX-XXXX-XXXX" style={{display:"block",width:"100%",padding:"12px 14px",background:T.cardInner,border:`1px solid ${T.border}`,borderRadius:10,fontFamily:"'Jost',sans-serif",fontSize:15,color:T.text,outline:"none",boxSizing:"border-box",marginBottom:12,letterSpacing:"0.05em"}}/>
-            {error&&<p style={{fontFamily:"'Jost',sans-serif",fontSize:12,color:"#f87171",margin:"0 0 12px"}}>{error}</p>}
-            <button onClick={handleActivate} disabled={loading} style={{width:"100%",padding:"13px",borderRadius:12,background:"#f59e0b",border:"none",cursor:loading?"not-allowed":"pointer",fontFamily:"'Jost',sans-serif",fontSize:15,fontWeight:600,color:"#09090b",opacity:loading?0.7:1,marginBottom:10}}>{loading?"Verifying…":"Activate Pro"}</button>
-            <button onClick={()=>{setMode("pitch");setError("");}} style={{width:"100%",background:"none",border:"none",cursor:"pointer",fontFamily:"'Jost',sans-serif",fontSize:13,color:T.dim,padding:"8px"}}>← Back</button>
-          </>
-        )}
+function HabitCard({habit,defaultSubs,customActionsForHabit,checkedMap,onToggle,note,onNote,T,isPro,customSubs,onUpdateCustomSub,onRequirePro,onAddAction,onDeleteAction}){
+  const[exp,setExp]=useState(false),[refExp,setRefExp]=useState(false);
+  const gc=GC[habit.gi];
+  const allSubs=[...defaultSubs,...customActionsForHabit];
+  const done=allSubs.filter(s=>checkedMap[s.id]).length,allDone=done===allSubs.length&&allSubs.length>0;
+  return(<div style={{background:T.card,borderRadius:14,marginBottom:10,border:`1px solid ${allDone?gc+"55":exp?T.veryDim:T.border}`,transition:"border-color 0.25s ease,background 0.3s",overflow:"hidden"}}>
+    <button onClick={()=>setExp(!exp)} style={{width:"100%",background:"none",border:"none",cursor:"pointer",padding:"13px 14px",display:"flex",gap:12,alignItems:"center",textAlign:"left"}}>
+      <div style={{width:28,height:28,borderRadius:"50%",flexShrink:0,background:allDone?gc:T.cardInner,color:allDone?(T.dark?"#09090b":"#fff"):T.dim,border:`1px solid ${allDone?"transparent":T.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,fontFamily:"'Jost',sans-serif",transition:"background 0.2s"}}>{habit.id}</div>
+      <div style={{flex:1,minWidth:0}}><div style={{fontFamily:"'Jost',sans-serif",fontWeight:600,fontSize:16,color:T.text,lineHeight:1.3}}>{habit.name}</div><div style={{fontFamily:"'Jost',sans-serif",fontSize:12,color:gc,marginTop:2}}>{habit.tag}</div></div>
+      <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
+        <div style={{display:"flex",gap:4}}>{defaultSubs.map(s=><div key={s.id} style={{width:7,height:7,borderRadius:"50%",background:checkedMap[s.id]?gc:T.veryDim,transition:"background 0.2s"}}/>)}{customActionsForHabit.map(a=><div key={a.id} style={{width:7,height:7,borderRadius:"50%",background:checkedMap[a.id]?gc:gc+"33",border:`1px solid ${gc}55`}}/>)}</div>
+        <span style={{color:T.dim,fontSize:13}}>{exp?"▴":"▾"}</span>
       </div>
-    </div>
-  );
+    </button>
+    {exp&&(<div style={{borderTop:`1px solid ${T.border}`}}>
+      <div style={{padding:"4px 14px 12px"}}><SubHabitList habitId={habit.id} defaultSubs={defaultSubs} customActionsForHabit={customActionsForHabit} checkedMap={checkedMap} onToggle={onToggle} customSubs={customSubs} onUpdateCustomSub={onUpdateCustomSub} isPro={isPro} onRequirePro={onRequirePro} onAddAction={onAddAction} onDeleteAction={onDeleteAction} T={T}/></div>
+      <div style={{padding:"0 14px 12px",borderTop:`1px solid ${T.divider}`}}>
+        <button onClick={()=>setRefExp(!refExp)} style={{background:"none",border:"none",cursor:"pointer",padding:"8px 0 0",fontFamily:"'Jost',sans-serif",fontSize:12,color:refExp?gc:T.veryDim,display:"flex",alignItems:"center",gap:4}}><span>{refExp?"▾":"▸"}</span><span>{note?"Edit reflection":"Add reflection"}</span></button>
+        {refExp&&<textarea value={note} onChange={e=>onNote(e.target.value)} placeholder="What did this look like for you today?" style={{display:"block",width:"100%",marginTop:6,background:T.cardInner,border:`1px solid ${T.border}`,borderRadius:8,padding:"8px 10px",fontFamily:"'Jost',sans-serif",fontSize:13,color:T.text,resize:"none",height:70,outline:"none",lineHeight:1.5,boxSizing:"border-box"}}/>}
+        {!refExp&&note&&<p style={{fontFamily:"'Jost',sans-serif",fontSize:12,color:T.veryDim,margin:"4px 0 0",lineHeight:1.4,fontStyle:"italic"}}>"{note.length>80?note.slice(0,80)+"…":note}"</p>}
+      </div>
+    </div>)}
+  </div>);
 }
 
-/* ═══════════════════════════ PRO ANALYTICS ═══════════════════════════ */
+function DailyTab({habits,notes,onToggle,onNote,T,isPro,customSubs,customActions,onUpdateCustomSub,onAddAction,onDeleteAction,onRequirePro,viewMode}){
+  const[activeSheet,setActiveSheet]=useState(null);
+  const totalSubs=getTotalSubs(customActions);
+  const s=calcScore(habits,totalSubs);
+  const done=Object.values(habits).filter(Boolean).length;
+  const groups=[{gi:0,label:"Private Victory",color:GC[0]},{gi:1,label:"Public Victory",color:GC[1]},{gi:2,label:"Renewal",color:GC[2]}];
+  const isGrid=viewMode==="grid";
+  return(<div style={{padding:"12px 16px 120px",maxWidth:480,margin:"0 auto"}}>
+    {activeSheet&&<HabitSheet habit={activeSheet} subs={DEFAULT_SUBS[activeSheet.id]} customActionsForHabit={customActions[activeSheet.id]||[]} checkedMap={habits} onToggle={onToggle} note={notes[activeSheet.id]||""} onNote={v=>onNote(activeSheet.id,v)} T={T} isPro={isPro} customSubs={customSubs} onUpdateCustomSub={onUpdateCustomSub} onRequirePro={onRequirePro} onAddAction={onAddAction} onDeleteAction={onDeleteAction} onClose={()=>setActiveSheet(null)}/>}
+    <div style={{display:"flex",justifyContent:"center",alignItems:"center",gap:14,padding:"8px 0 16px"}}>
+      <ScoreRing pct={s} size={86} T={T}/>
+      <div><div style={{fontFamily:"'Jost',sans-serif",fontSize:14,color:T.dim}}>{done}/{totalSubs} actions today</div>{done===totalSubs&&totalSubs>0&&<div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:16,color:"#34d399",marginTop:2}}>All done. ✦</div>}</div>
+    </div>
+    {groups.map((g,gi)=>{const groupHabits=HABITS.filter(h=>h.gi===g.gi);return(<div key={g.gi}>
+      <div style={{display:"flex",alignItems:"center",gap:8,margin:gi===0?"0 0 12px":"18px 0 12px"}}><div style={{width:3,height:12,borderRadius:2,background:g.color,flexShrink:0}}/><span style={{fontFamily:"'Jost',sans-serif",fontSize:11,fontWeight:600,textTransform:"uppercase",letterSpacing:"0.09em",color:g.color}}>{g.label}</span></div>
+      {isGrid?(<div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:4}}>{groupHabits.map(h=><GridHabitCard key={h.id} habit={h} subs={DEFAULT_SUBS[h.id]} customActionsCount={(customActions[h.id]||[]).length} checkedMap={habits} T={T} onClick={()=>setActiveSheet(h)}/>)}</div>)
+      :(<div>{groupHabits.map(h=><HabitCard key={h.id} habit={h} defaultSubs={DEFAULT_SUBS[h.id]} customActionsForHabit={customActions[h.id]||[]} checkedMap={habits} onToggle={onToggle} note={notes[h.id]||""} onNote={v=>onNote(h.id,v)} T={T} isPro={isPro} customSubs={customSubs} onUpdateCustomSub={onUpdateCustomSub} onRequirePro={onRequirePro} onAddAction={onAddAction} onDeleteAction={onDeleteAction}/>)}</div>)}
+    </div>);})}
+    {done===totalSubs&&totalSubs>0&&<div style={{textAlign:"center",padding:"20px 0 4px",fontFamily:"'Cormorant Garamond',serif",fontSize:19,color:"#34d399"}}>All {totalSubs} actions completed today. ✦</div>}
+  </div>);
+}
+
+function JournalSection({logs,T}){
+  const[openDay,setOpenDay]=useState(null);
+  const entries=Object.entries(logs).filter(([,log])=>log.score>0||Object.values(log.notes||{}).some(n=>n?.trim())).sort(([a],[b])=>b.localeCompare(a)).slice(0,30);
+  if(!entries.length)return null;
+  return(<div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,padding:"16px 16px",marginBottom:14,transition:"background 0.3s"}}>
+    <div style={{fontFamily:"'Jost',sans-serif",fontSize:14,fontWeight:600,color:T.textSub,marginBottom:4}}>Reflection Journal</div>
+    <div style={{fontFamily:"'Jost',sans-serif",fontSize:12,color:T.dim,marginBottom:14}}>Tap any day to read your notes</div>
+    {entries.map(([date,log])=>{
+      const notes=Object.entries(log.notes||{}).filter(([,n])=>n?.trim());
+      const s=log.score||0,color=s>=70?"#34d399":s>=40?"#fbbf24":"#f87171",isOpen=openDay===date;
+      return(<div key={date} style={{borderBottom:`1px solid ${T.divider}`}}>
+        <div onClick={()=>setOpenDay(isOpen?null:date)} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 0",cursor:"pointer"}}>
+          <div><div style={{fontFamily:"'Jost',sans-serif",fontSize:14,color:T.text,fontWeight:500}}>{fmtDate(date)}</div><div style={{fontFamily:"'Jost',sans-serif",fontSize:11,color:T.dim,marginTop:2}}>{notes.length>0?`📝 ${notes.length} reflection note${notes.length>1?"s":""}`:s>0?"No notes written":""}</div></div>
+          <div style={{display:"flex",alignItems:"center",gap:10,flexShrink:0}}><span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:20,fontWeight:700,color}}>{s}%</span><span style={{color:T.dim,fontSize:12}}>{isOpen?"▴":"▾"}</span></div>
+        </div>
+        {isOpen&&<div style={{paddingBottom:14}}>{notes.length>0?notes.map(([habitId,note])=>{const habit=HABITS.find(h=>h.id===parseInt(habitId));return(<div key={habitId} style={{marginBottom:10,padding:"12px 14px",background:T.cardInner,borderRadius:10}}><div style={{fontFamily:"'Jost',sans-serif",fontSize:12,fontWeight:600,color:GC[habit?.gi??0],marginBottom:5}}>{habit?.name||"Habit"}</div><p style={{fontFamily:"'Jost',sans-serif",fontSize:14,color:T.textSub,lineHeight:1.6,margin:0,fontStyle:"italic"}}>"{note}"</p></div>);}):<p style={{fontFamily:"'Jost',sans-serif",fontSize:13,color:T.dim,fontStyle:"italic",margin:0,paddingBottom:4}}>No reflection notes for this day.</p>}</div>}
+      </div>);
+    })}
+  </div>);
+}
 
 function ProAnalytics({logs,T,onRequirePro,isPro}){
-  if(!isPro){
-    return(
-      <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,padding:"20px 16px",marginBottom:14,position:"relative",overflow:"hidden"}}>
-        <div style={{filter:"blur(3px)",pointerEvents:"none",opacity:0.4}}>
-          <div style={{fontFamily:"'Jost',sans-serif",fontSize:13,fontWeight:600,color:T.textSub,marginBottom:14}}>Pro Analytics</div>
-          {[["Strongest","Be Proactive"],["Weakest","Synergize"],["Best day","Wednesday"]].map(([l,v])=>(
-            <div key={l} style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:`1px solid ${T.divider}`}}><span style={{fontFamily:"'Jost',sans-serif",fontSize:13,color:T.muted}}>{l}</span><span style={{fontFamily:"'Jost',sans-serif",fontSize:13,fontWeight:600,color:T.text}}>{v}</span></div>
-          ))}
-        </div>
-        <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:T.dark?"rgba(9,9,11,0.7)":"rgba(247,247,242,0.8)",borderRadius:14}}>
-          <div style={{fontSize:28,marginBottom:8}}>🔒</div>
-          <div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:18,fontWeight:700,color:T.text,marginBottom:4}}>Pro Analytics</div>
-          <div style={{fontFamily:"'Jost',sans-serif",fontSize:12,color:T.muted,marginBottom:14,textAlign:"center"}}>Deep insights into your habit patterns</div>
-          <button onClick={onRequirePro} style={{background:"#f59e0b",border:"none",borderRadius:8,padding:"10px 20px",fontFamily:"'Jost',sans-serif",fontSize:13,fontWeight:600,color:"#09090b",cursor:"pointer"}}>Unlock Pro</button>
-        </div>
-      </div>
-    );
-  }
-
+  if(!isPro)return(<div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,padding:"20px 16px",marginBottom:14,position:"relative",overflow:"hidden"}}>
+    <div style={{filter:"blur(3px)",pointerEvents:"none",opacity:0.4}}><div style={{fontFamily:"'Jost',sans-serif",fontSize:13,fontWeight:600,color:T.textSub,marginBottom:14}}>Pro Analytics</div>{[["Strongest","Be Proactive"],["Weakest","Synergize"],["Best day","Wednesday"]].map(([l,v])=>(<div key={l} style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:`1px solid ${T.divider}`}}><span style={{fontFamily:"'Jost',sans-serif",fontSize:13,color:T.muted}}>{l}</span><span style={{fontFamily:"'Jost',sans-serif",fontSize:13,fontWeight:600,color:T.text}}>{v}</span></div>))}</div>
+    <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:T.dark?"rgba(9,9,11,0.7)":"rgba(247,247,242,0.8)",borderRadius:14}}><div style={{fontSize:28,marginBottom:8}}>🔒</div><div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:18,fontWeight:700,color:T.text,marginBottom:4}}>Pro Analytics</div><div style={{fontFamily:"'Jost',sans-serif",fontSize:12,color:T.muted,marginBottom:14,textAlign:"center"}}>Deep insights into your habit patterns</div><button onClick={onRequirePro} style={{background:"#f59e0b",border:"none",borderRadius:8,padding:"10px 20px",fontFamily:"'Jost',sans-serif",fontSize:13,fontWeight:600,color:"#09090b",cursor:"pointer"}}>Unlock Pro</button></div>
+  </div>);
   const last30=lastNDays(30),loggedDays=last30.filter(d=>logs[d]);
-  const habitStats=HABITS.map(h=>{
-    const subs=DEFAULT_SUBS[h.id];let done=0,possible=0;
-    loggedDays.forEach(d=>{possible+=subs.length;done+=subs.filter(s=>logs[d]?.habits?.[s.id]).length;});
-    const rate=possible>0?Math.round((done/possible)*100):0;
-    return{name:h.name.split(" ").slice(0,2).join(" "),rate,color:GC[h.gi]};
-  });
+  const habitStats=HABITS.map(h=>{const subs=DEFAULT_SUBS[h.id];let done=0,possible=0;loggedDays.forEach(d=>{possible+=subs.length;done+=subs.filter(s=>logs[d]?.habits?.[s.id]).length;});const rate=possible>0?Math.round((done/possible)*100):0;return{name:h.name.split(" ").slice(0,2).join(" "),rate,color:GC[h.gi]};});
   const strongest=habitStats.reduce((a,b)=>b.rate>a.rate?b:a,habitStats[0]);
   const weakest=habitStats.reduce((a,b)=>b.rate<a.rate?b:a,habitStats[0]);
   const dayScores=Array(7).fill(null).map(()=>({total:0,count:0}));
@@ -545,404 +604,83 @@ function ProAnalytics({logs,T,onRequirePro,isPro}){
   const allSubs=Object.values(DEFAULT_SUBS).flat();
   const subStats=allSubs.map(s=>{let done=0;loggedDays.forEach(d=>{if(logs[d]?.habits?.[s.id])done++;});return{...s,skipRate:loggedDays.length>0?Math.round((1-done/loggedDays.length)*100):100};});
   const mostSkipped=subStats.sort((a,b)=>b.skipRate-a.skipRate)[0];
-
-  return(
-    <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,padding:"16px 14px",marginBottom:14}}>
-      <div style={{fontFamily:"'Jost',sans-serif",fontSize:13,fontWeight:600,color:T.textSub,marginBottom:4}}>Pro Analytics</div>
-      <div style={{fontFamily:"'Jost',sans-serif",fontSize:11,color:T.dim,marginBottom:14}}>Based on last 30 days</div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:16}}>
-        {[{label:"Strongest",val:strongest?.name||"—",color:"#34d399"},{label:"Weakest",val:weakest?.name||"—",color:"#f87171"},{label:"Best Day",val:days[bestDayIdx],color:"#fbbf24"}].map(({label,val,color})=>(
-          <div key={label} style={{background:T.cardInner,borderRadius:10,padding:"10px 8px",textAlign:"center"}}><div style={{fontFamily:"'Jost',sans-serif",fontSize:10,color:T.dim,marginBottom:4,textTransform:"uppercase",letterSpacing:"0.06em"}}>{label}</div><div style={{fontFamily:"'Jost',sans-serif",fontSize:12,fontWeight:700,color,lineHeight:1.3}}>{val}</div></div>
-        ))}
-      </div>
-      <div style={{fontFamily:"'Jost',sans-serif",fontSize:11,color:T.dim,marginBottom:8}}>Completion rate per habit</div>
-      <ResponsiveContainer width="100%" height={130}>
-        <BarChart data={habitStats} layout="vertical" margin={{left:0,right:8,top:0,bottom:0}}>
-          <XAxis type="number" domain={[0,100]} tick={{fontSize:9,fill:T.dim}} axisLine={false} tickLine={false} tickCount={3} tickFormatter={v=>`${v}%`}/>
-          <YAxis type="category" dataKey="name" tick={{fontSize:10,fill:T.dim,fontFamily:"'Jost',sans-serif"}} axisLine={false} tickLine={false} width={52}/>
-          <Tooltip formatter={v=>[`${v}%`,"Completion"]} contentStyle={{background:T.card,border:`1px solid ${T.border}`,borderRadius:8,fontFamily:"'Jost',sans-serif",fontSize:12,color:T.text}}/>
-          <Bar dataKey="rate" radius={[0,4,4,0]}>{habitStats.map((e,i)=><Cell key={i} fill={e.color}/>)}</Bar>
-        </BarChart>
-      </ResponsiveContainer>
-      {mostSkipped&&(
-        <div style={{marginTop:14,padding:"10px 12px",background:T.cardInner,borderRadius:10}}>
-          <div style={{fontFamily:"'Jost',sans-serif",fontSize:11,color:T.dim,marginBottom:4,textTransform:"uppercase",letterSpacing:"0.06em"}}>Most skipped action</div>
-          <div style={{fontFamily:"'Jost',sans-serif",fontSize:13,color:T.textSub,lineHeight:1.5}}><em style={{fontStyle:"normal",fontWeight:700,color:"#f87171"}}>I </em>{mostSkipped.text} today. <span style={{color:T.dim,fontSize:11}}>Skipped {mostSkipped.skipRate}% of days</span></div>
-        </div>
-      )}
-    </div>
-  );
+  const TT={background:T.card,border:`1px solid ${T.border}`,borderRadius:8,fontFamily:"'Jost',sans-serif",fontSize:12,color:T.text};
+  return(<div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,padding:"16px 14px",marginBottom:14}}>
+    <div style={{fontFamily:"'Jost',sans-serif",fontSize:13,fontWeight:600,color:T.textSub,marginBottom:4}}>Pro Analytics</div>
+    <div style={{fontFamily:"'Jost',sans-serif",fontSize:11,color:T.dim,marginBottom:14}}>Based on last 30 days</div>
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:16}}>{[{label:"Strongest",val:strongest?.name||"—",color:"#34d399"},{label:"Weakest",val:weakest?.name||"—",color:"#f87171"},{label:"Best Day",val:days[bestDayIdx],color:"#fbbf24"}].map(({label,val,color})=>(<div key={label} style={{background:T.cardInner,borderRadius:10,padding:"10px 8px",textAlign:"center"}}><div style={{fontFamily:"'Jost',sans-serif",fontSize:10,color:T.dim,marginBottom:4,textTransform:"uppercase",letterSpacing:"0.06em"}}>{label}</div><div style={{fontFamily:"'Jost',sans-serif",fontSize:12,fontWeight:700,color,lineHeight:1.3}}>{val}</div></div>))}</div>
+    <div style={{fontFamily:"'Jost',sans-serif",fontSize:11,color:T.dim,marginBottom:8}}>Completion rate per habit</div>
+    <ResponsiveContainer width="100%" height={130}><BarChart data={habitStats} layout="vertical" margin={{left:0,right:8,top:0,bottom:0}}><XAxis type="number" domain={[0,100]} tick={{fontSize:9,fill:T.dim}} axisLine={false} tickLine={false} tickCount={3} tickFormatter={v=>`${v}%`}/><YAxis type="category" dataKey="name" tick={{fontSize:10,fill:T.dim,fontFamily:"'Jost',sans-serif"}} axisLine={false} tickLine={false} width={52}/><Tooltip formatter={v=>[`${v}%`,"Completion"]} contentStyle={TT}/><Bar dataKey="rate" radius={[0,4,4,0]}>{habitStats.map((e,i)=><Cell key={i} fill={e.color}/>)}</Bar></BarChart></ResponsiveContainer>
+    {mostSkipped&&<div style={{marginTop:14,padding:"10px 12px",background:T.cardInner,borderRadius:10}}><div style={{fontFamily:"'Jost',sans-serif",fontSize:11,color:T.dim,marginBottom:4,textTransform:"uppercase",letterSpacing:"0.06em"}}>Most skipped action</div><div style={{fontFamily:"'Jost',sans-serif",fontSize:13,color:T.textSub,lineHeight:1.5}}><em style={{fontStyle:"normal",fontWeight:700,color:"#f87171"}}>I </em>{mostSkipped.text} today. <span style={{color:T.dim,fontSize:11}}>Skipped {mostSkipped.skipRate}% of days</span></div></div>}
+  </div>);
 }
 
-/* ═══════════════════════════ EXPORT SECTION ═══════════════════════════ */
-
-function ExportSection({logs,T,isPro,onRequirePro,userEmail}){
-  const[loading,setLoading]=useState(null);
-  if(!isPro){
-    return(<div onClick={onRequirePro} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,padding:"16px 14px",marginBottom:14,cursor:"pointer",display:"flex",gap:12,alignItems:"center"}}><div style={{fontSize:22}}>🔒</div><div><div style={{fontFamily:"'Jost',sans-serif",fontSize:13,fontWeight:600,color:T.textSub,marginBottom:2}}>Export History</div><div style={{fontFamily:"'Jost',sans-serif",fontSize:12,color:T.muted}}>Download as CSV or PDF · Pro feature</div></div></div>);
-  }
-  return(
-    <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,padding:"16px 14px",marginBottom:14}}>
-      <div style={{fontFamily:"'Jost',sans-serif",fontSize:13,fontWeight:600,color:"#f59e0b",marginBottom:4}}>Export History</div>
-      <p style={{fontFamily:"'Jost',sans-serif",fontSize:13,color:T.muted,margin:"0 0 14px",lineHeight:1.5}}>Download your full practice history. On mobile, share to email, WhatsApp, or any app.</p>
-      <div style={{display:"flex",gap:10}}>
-        <button onClick={async()=>{setLoading("csv");try{await exportCSV(logs);}catch(e){alert("Export failed: "+e.message);}setLoading(null);}} disabled={loading==="csv"} style={{flex:1,padding:"11px",borderRadius:10,background:T.cardInner,border:`1px solid ${T.border}`,fontFamily:"'Jost',sans-serif",fontSize:13,fontWeight:600,color:T.text,cursor:"pointer",opacity:loading==="csv"?0.6:1}}>{loading==="csv"?"Exporting…":"📊 Export CSV"}</button>
-        <button onClick={()=>exportPDF(logs,userEmail)} style={{flex:1,padding:"11px",borderRadius:10,background:T.cardInner,border:`1px solid ${T.border}`,fontFamily:"'Jost',sans-serif",fontSize:13,fontWeight:600,color:T.text,cursor:"pointer"}}>📄 Export PDF</button>
-      </div>
-    </div>
-  );
-}
-
-/* ═══════════════════════════ ONBOARDING ═══════════════════════════ */
-
-function Onboarding({onDone}){
-  const[slide,setSlide]=useState(0);const isLast=slide===ONBOARDING_SLIDES.length-1;const s=ONBOARDING_SLIDES[slide];
-  return(
-    <div style={{position:"fixed",inset:0,background:"#09090b",zIndex:200,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"space-between",padding:"60px 28px 48px"}}>
-      <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",maxWidth:340,width:"100%"}}>
-        <div style={{width:80,height:80,borderRadius:"50%",background:"#18181b",border:"1px solid #27272a",display:"flex",alignItems:"center",justifyContent:"center",fontSize:32,marginBottom:32,color:"#f59e0b"}}>{s.icon}</div>
-        <h1 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:30,fontWeight:700,color:"#fafafa",textAlign:"center",margin:"0 0 16px",lineHeight:1.2,whiteSpace:"pre-line"}}>{s.title}</h1>
-        <p style={{fontFamily:"'Jost',sans-serif",fontSize:14,color:"#a1a1aa",textAlign:"center",lineHeight:1.7,margin:0}}>{s.body}</p>
-      </div>
-      <div style={{width:"100%",maxWidth:340}}>
-        <div style={{display:"flex",justifyContent:"center",gap:6,marginBottom:28}}>{ONBOARDING_SLIDES.map((_,i)=><div key={i} style={{height:6,borderRadius:3,width:i===slide?22:6,background:i===slide?"#f59e0b":"#27272a",transition:"all 0.3s ease"}}/>)}</div>
-        <button onClick={isLast?onDone:()=>setSlide(slide+1)} style={{width:"100%",padding:"15px",borderRadius:12,background:"#f59e0b",border:"none",cursor:"pointer",fontFamily:"'Jost',sans-serif",fontSize:15,fontWeight:600,color:"#09090b",marginBottom:12}}>{isLast?"Get Started":"Next"}</button>
-        {!isLast&&<button onClick={onDone} style={{width:"100%",background:"none",border:"none",cursor:"pointer",fontFamily:"'Jost',sans-serif",fontSize:13,color:"#3f3f46",padding:"8px"}}>Skip</button>}
-      </div>
-    </div>
-  );
-}
-
-/* ═══════════════════════════ BOTTOM NAV ═══════════════════════════ */
-
-function BottomNav({tab,setTab,T}){
-  return(
-    <nav style={{position:"fixed",bottom:0,left:0,right:0,zIndex:50,background:T.navBg,backdropFilter:"blur(16px)",borderTop:`1px solid ${T.border}`,display:"flex",paddingBottom:"env(safe-area-inset-bottom,0px)",transition:"background 0.3s"}}>
-      {[{id:"info",icon:"📖",label:"Info"},{id:"daily",icon:"✅",label:"Today"},{id:"history",icon:"📈",label:"History"},{id:"settings",icon:"⚙️",label:"Settings"}].map(t=>(
-        <button key={t.id} onClick={()=>setTab(t.id)} style={{flex:1,background:"none",border:"none",cursor:"pointer",padding:"9px 0 7px",display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
-          <span style={{fontSize:20}}>{t.icon}</span>
-          <span style={{fontFamily:"'Jost',sans-serif",fontSize:9,fontWeight:600,textTransform:"uppercase",letterSpacing:"0.06em",color:tab===t.id?"#f59e0b":T.dim,transition:"color 0.2s"}}>{t.label}</span>
-        </button>
-      ))}
-    </nav>
-  );
-}
-
-/* ═══════════════════════════ INFO TAB ═══════════════════════════ */
-
-function InfoTab({T}){
-  const[openFaq,setOpenFaq]=useState(null);
-  const PS={fontFamily:"'Jost',sans-serif",fontSize:13,color:T.muted,lineHeight:1.65,margin:"0 0 8px"};
-  const HS={fontFamily:"'Cormorant Garamond',serif",fontSize:20,fontWeight:700,color:T.text,margin:"0 0 14px"};
-  return(
-    <div style={{padding:"20px 16px 110px",maxWidth:480,margin:"0 auto"}}>
-      <div style={{textAlign:"center",padding:"28px 0 32px"}}>
-        <div style={{fontSize:44,marginBottom:12}}>📖</div>
-        <h1 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:32,fontWeight:700,color:T.text,margin:"0 0 10px",lineHeight:1.15}}>7 Habits Tracker</h1>
-        <p style={{...PS,margin:0,maxWidth:300,marginLeft:"auto",marginRight:"auto"}}>A daily practice companion built on Stephen R. Covey's framework for enduring personal effectiveness.</p>
-      </div>
-      <div style={{height:1,background:"linear-gradient(to right, transparent, #f59e0b44, transparent)",marginBottom:28}}/>
-      <div style={{marginBottom:28}}>
-        <h2 style={HS}>About the Book</h2>
-        <p style={PS}><em style={{color:T.textSub}}>The 7 Habits of Highly Effective People</em> by Stephen R. Covey (1989) argues that lasting effectiveness comes from character, not technique.</p>
-        <p style={PS}>The habits build sequentially — moving you from dependence through independence to interdependence.</p>
-      </div>
-      {[{label:"Private Victory",ids:[1,2,3],desc:"Master yourself before you can effectively lead others.",color:GC[0]},{label:"Public Victory",ids:[4,5,6],desc:"Build trust and create lasting collaborative outcomes.",color:GC[1]},{label:"Renewal",ids:[7],desc:"Sustain your capacity to keep practising everything else.",color:GC[2]}].map(g=>(
-        <div key={g.label} style={{marginBottom:28}}>
-          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}><div style={{width:3,height:14,borderRadius:2,background:g.color,flexShrink:0}}/><span style={{fontFamily:"'Jost',sans-serif",fontSize:11,fontWeight:600,textTransform:"uppercase",letterSpacing:"0.1em",color:g.color}}>{g.label}</span></div>
-          <p style={{...PS,marginBottom:10}}>{g.desc}</p>
-          {HABITS.filter(h=>g.ids.includes(h.id)).map(h=>(
-            <div key={h.id} style={{display:"flex",gap:12,padding:"11px 0",borderBottom:`1px solid ${T.border}`}}>
-              <div style={{width:26,height:26,borderRadius:"50%",background:g.color+"18",border:`1px solid ${g.color}40`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:11,fontWeight:700,color:g.color,fontFamily:"'Jost',sans-serif",marginTop:1}}>{h.id}</div>
-              <div><div style={{fontFamily:"'Jost',sans-serif",fontWeight:600,fontSize:14,color:T.text,marginBottom:3}}>{h.name}</div><div style={{fontFamily:"'Jost',sans-serif",fontSize:12,color:T.muted,lineHeight:1.55}}>{h.desc}</div></div>
-            </div>
-          ))}
-        </div>
-      ))}
-      <div style={{marginBottom:28}}>
-        <h2 style={HS}>How to Use</h2>
-        {[["📋 Today Tab","Open it each day. Tap a habit to expand. Tick what you actually practised. Pro users can add custom actions inside any habit."],["📈 History Tab","Daily, weekly, and monthly scores plus Pro analytics and export."],["⚙️ Settings","Reminders, dark/light mode, checklist layout, account, and Pro activation."],["💡 Mindset","Missing a day is data, not failure. Just show up the next day."]].map(([t,d])=>(
-          <div key={t} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:10,padding:"12px 14px",marginBottom:8}}><div style={{fontFamily:"'Jost',sans-serif",fontWeight:600,fontSize:13,color:"#f59e0b",marginBottom:4}}>{t}</div><div style={{fontFamily:"'Jost',sans-serif",fontSize:13,color:T.muted,lineHeight:1.55}}>{d}</div></div>
-        ))}
-      </div>
-      <div>
-        <h2 style={HS}>FAQs</h2>
-        {FAQS.map((f,i)=>(
-          <div key={i} style={{borderBottom:`1px solid ${T.border}`}}>
-            <button onClick={()=>setOpenFaq(openFaq===i?null:i)} style={{width:"100%",background:"none",border:"none",cursor:"pointer",padding:"13px 0",display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,textAlign:"left"}}>
-              <span style={{fontFamily:"'Jost',sans-serif",fontSize:14,fontWeight:500,color:T.textSub,lineHeight:1.4}}>{f.q}</span>
-              <span style={{color:T.dim,fontSize:20,flexShrink:0}}>{openFaq===i?"−":"+"}</span>
-            </button>
-            {openFaq===i&&<p style={{...PS,paddingBottom:12,marginTop:-4}}>{f.a}</p>}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/* ═══════════════════════════ LIST HABIT CARD ═══════════════════════════ */
-
-function HabitCard({habit,defaultSubs,customActionsForHabit,checkedMap,onToggle,note,onNote,T,isPro,customSubs,onUpdateCustomSub,onRequirePro,onAddAction,onDeleteAction}){
-  const[exp,setExp]=useState(false),[refExp,setRefExp]=useState(false);
-  const gc=GC[habit.gi];
-  const allSubs=[...defaultSubs,...customActionsForHabit];
-  const done=allSubs.filter(s=>checkedMap[s.id]).length;
-  const allDone=done===allSubs.length&&allSubs.length>0;
-
-  return(
-    <div style={{background:T.card,borderRadius:14,marginBottom:10,border:`1px solid ${allDone?gc+"55":exp?T.veryDim:T.border}`,transition:"border-color 0.25s ease,background 0.3s",overflow:"hidden"}}>
-      <button onClick={()=>setExp(!exp)} style={{width:"100%",background:"none",border:"none",cursor:"pointer",padding:"13px 14px",display:"flex",gap:12,alignItems:"center",textAlign:"left"}}>
-        <div style={{width:28,height:28,borderRadius:"50%",flexShrink:0,background:allDone?gc:T.cardInner,color:allDone?(T.dark?"#09090b":"#fff"):T.dim,border:`1px solid ${allDone?"transparent":T.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,fontFamily:"'Jost',sans-serif",transition:"background 0.2s"}}>{habit.id}</div>
-        <div style={{flex:1,minWidth:0}}>
-          <div style={{fontFamily:"'Jost',sans-serif",fontWeight:600,fontSize:15,color:T.text,lineHeight:1.3}}>{habit.name}</div>
-          <div style={{fontFamily:"'Jost',sans-serif",fontSize:11,color:gc,marginTop:2}}>{habit.tag}</div>
-        </div>
-        <div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
-          <div style={{display:"flex",gap:4}}>
-            {defaultSubs.map(s=><div key={s.id} style={{width:7,height:7,borderRadius:"50%",background:checkedMap[s.id]?gc:T.veryDim,transition:"background 0.2s"}}/>)}
-            {customActionsForHabit.map(a=><div key={a.id} style={{width:7,height:7,borderRadius:"50%",background:checkedMap[a.id]?gc:gc+"33",border:`1px solid ${gc}55`,transition:"background 0.2s"}}/>)}
-          </div>
-          <span style={{color:T.dim,fontSize:13}}>{exp?"▴":"▾"}</span>
-        </div>
-      </button>
-      {exp&&(
-        <div style={{borderTop:`1px solid ${T.border}`}}>
-          <div style={{padding:"4px 14px 12px"}}>
-            <SubHabitList habitId={habit.id} defaultSubs={defaultSubs} customActionsForHabit={customActionsForHabit}
-              checkedMap={checkedMap} onToggle={onToggle} customSubs={customSubs}
-              onUpdateCustomSub={onUpdateCustomSub} isPro={isPro} onRequirePro={onRequirePro}
-              onAddAction={onAddAction} onDeleteAction={onDeleteAction} T={T}/>
-          </div>
-          <div style={{padding:"0 14px 12px",borderTop:`1px solid ${T.divider}`}}>
-            <button onClick={()=>setRefExp(!refExp)} style={{background:"none",border:"none",cursor:"pointer",padding:"8px 0 0",fontFamily:"'Jost',sans-serif",fontSize:11,color:refExp?gc:T.veryDim,display:"flex",alignItems:"center",gap:4}}>
-              <span>{refExp?"▾":"▸"}</span><span>{note?"Edit reflection":"Add reflection"}</span>
-            </button>
-            {refExp&&<textarea value={note} onChange={e=>onNote(e.target.value)} placeholder="What did this look like for you today?" style={{display:"block",width:"100%",marginTop:6,background:T.cardInner,border:`1px solid ${T.border}`,borderRadius:8,padding:"8px 10px",fontFamily:"'Jost',sans-serif",fontSize:12,color:T.text,resize:"none",height:70,outline:"none",lineHeight:1.5,boxSizing:"border-box"}}/>}
-            {!refExp&&note&&<p style={{fontFamily:"'Jost',sans-serif",fontSize:12,color:T.veryDim,margin:"4px 0 0",lineHeight:1.4,fontStyle:"italic"}}>"{note.length>80?note.slice(0,80)+"…":note}"</p>}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ═══════════════════════════ DAILY TAB ═══════════════════════════ */
-
-function DailyTab({habits,notes,onToggle,onNote,saved,T,isPro,customSubs,customActions,onUpdateCustomSub,onAddAction,onDeleteAction,onRequirePro,viewMode}){
-  const[activeSheet,setActiveSheet]=useState(null);
-  const totalSubs=getTotalSubs(customActions);
-  const s=calcScore(habits,totalSubs);
-  const done=Object.values(habits).filter(Boolean).length;
-  const ds=new Date().toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"});
-  const groups=[{gi:0,label:"Private Victory",color:GC[0]},{gi:1,label:"Public Victory",color:GC[1]},{gi:2,label:"Renewal",color:GC[2]}];
-  const isGrid=viewMode==="grid";
-
-  return(
-    <div style={{padding:"20px 16px 110px",maxWidth:480,margin:"0 auto"}}>
-      {activeSheet&&(
-        <HabitSheet habit={activeSheet} subs={DEFAULT_SUBS[activeSheet.id]}
-          customActionsForHabit={customActions[activeSheet.id]||[]}
-          checkedMap={habits} onToggle={onToggle}
-          note={notes[activeSheet.id]||""} onNote={v=>onNote(activeSheet.id,v)}
-          T={T} isPro={isPro} customSubs={customSubs}
-          onUpdateCustomSub={onUpdateCustomSub} onRequirePro={onRequirePro}
-          onAddAction={onAddAction} onDeleteAction={onDeleteAction}
-          onClose={()=>setActiveSheet(null)}/>
-      )}
-
-      {/* Header */}
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20}}>
-        <div>
-          <h1 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:26,fontWeight:700,color:T.text,margin:"0 0 4px",lineHeight:1.2}}>Daily Check-in</h1>
-          <div style={{fontFamily:"'Jost',sans-serif",fontSize:12,color:T.dim}}>{ds}</div>
-          <div style={{fontFamily:"'Jost',sans-serif",fontSize:11,color:saved?"#34d399":"transparent",marginTop:3,transition:"color 0.3s"}}>✓ Saved</div>
-        </div>
-        <div style={{textAlign:"center"}}>
-          <ScoreRing pct={s} size={78} T={T}/>
-          <div style={{fontFamily:"'Jost',sans-serif",fontSize:10,color:T.dim,marginTop:3}}>{done}/{totalSubs} actions</div>
-        </div>
-      </div>
-
-      {groups.map((g,gi)=>{
-        const groupHabits=HABITS.filter(h=>h.gi===g.gi);
-        return(
-          <div key={g.gi}>
-            <div style={{display:"flex",alignItems:"center",gap:8,margin:gi===0?"0 0 12px":"20px 0 12px"}}>
-              <div style={{width:3,height:12,borderRadius:2,background:g.color,flexShrink:0}}/>
-              <span style={{fontFamily:"'Jost',sans-serif",fontSize:10,fontWeight:600,textTransform:"uppercase",letterSpacing:"0.09em",color:g.color}}>{g.label}</span>
-            </div>
-
-            {isGrid?(
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:4}}>
-                {groupHabits.map(h=>(
-                  <GridHabitCard key={h.id} habit={h} subs={DEFAULT_SUBS[h.id]}
-                    customActionsCount={(customActions[h.id]||[]).length}
-                    checkedMap={habits} T={T} onClick={()=>setActiveSheet(h)}/>
-                ))}
-              </div>
-            ):(
-              <div>
-                {groupHabits.map(h=>(
-                  <HabitCard key={h.id} habit={h} defaultSubs={DEFAULT_SUBS[h.id]}
-                    customActionsForHabit={customActions[h.id]||[]}
-                    checkedMap={habits} onToggle={onToggle}
-                    note={notes[h.id]||""} onNote={v=>onNote(h.id,v)}
-                    T={T} isPro={isPro} customSubs={customSubs}
-                    onUpdateCustomSub={onUpdateCustomSub} onRequirePro={onRequirePro}
-                    onAddAction={onAddAction} onDeleteAction={onDeleteAction}/>
-                ))}
-              </div>
-            )}
-          </div>
-        );
-      })}
-
-      {done===totalSubs&&totalSubs>0&&<div style={{textAlign:"center",padding:"20px 0 4px",fontFamily:"'Cormorant Garamond',serif",fontSize:19,color:"#34d399"}}>All {totalSubs} actions completed today. ✦</div>}
-    </div>
-  );
-}
-
-/* ═══════════════════════════ HISTORY TAB ═══════════════════════════ */
-
-function HistoryTab({logs,T,isPro,onRequirePro,userEmail}){
+function HistoryPage({onBack,logs,T,isPro,onRequirePro,userEmail}){
   const l7=lastNDays(7).map(d=>({day:dayLabel(d),score:logs[d]?.score??0}));
   const wAvg=Math.round(l7.reduce((s,d)=>s+d.score,0)/7);
-  const mKeys=monthDayKeys();
-  const mData=mKeys.map(d=>{const[,,day]=d.split("-").map(Number);return{day,score:logs[d]?.score??0};});
-  const loggedM=mKeys.filter(d=>logs[d]);
-  const mAvg=loggedM.length?Math.round(loggedM.reduce((s,d)=>s+(logs[d]?.score??0),0)/loggedM.length):0;
-  const todayScore=logs[localKey()]?.score??0;
-  const allVals=Object.values(logs),total=allVals.length;
+  const mKeys=monthDayKeys(),mData=mKeys.map(d=>{const[,,day]=d.split("-").map(Number);return{day,score:logs[d]?.score??0};});
+  const loggedM=mKeys.filter(d=>logs[d]),mAvg=loggedM.length?Math.round(loggedM.reduce((s,d)=>s+(logs[d]?.score??0),0)/loggedM.length):0;
+  const todayScore=logs[localKey()]?.score??0,allVals=Object.values(logs),total=allVals.length;
   const avg=total?Math.round(allVals.reduce((s,v)=>s+(v.score||0),0)/total):0;
   const streak=calcStreak(logs),best=calcBest(logs);
   const TT={background:T.card,border:`1px solid ${T.border}`,borderRadius:8,fontFamily:"'Jost',sans-serif",fontSize:12,color:T.text};
-
-  return(
-    <div style={{padding:"20px 16px 110px",maxWidth:480,margin:"0 auto"}}>
-      <h1 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:26,fontWeight:700,color:T.text,margin:"0 0 20px"}}>Progress</h1>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:20}}>
-        {[{label:"Today",pct:todayScore},{label:"7-Day Avg",pct:wAvg},{label:"Month Avg",pct:mAvg}].map(({label,pct})=>(
-          <div key={label} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:"14px 8px",textAlign:"center",transition:"background 0.3s"}}><ScoreRing pct={pct} size={64} T={T}/><div style={{fontFamily:"'Jost',sans-serif",fontSize:10,color:T.dim,marginTop:6,textTransform:"uppercase",letterSpacing:"0.07em"}}>{label}</div></div>
-        ))}
-      </div>
+  const[loadingExport,setLoadingExport]=useState(null);
+  return(<div style={{minHeight:"100vh",background:T.bg,transition:"background 0.3s"}}>
+    <PageHeader title="Progress" onBack={onBack} T={T}/>
+    <div style={{padding:"16px 16px 80px",maxWidth:480,margin:"0 auto"}}>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:20}}>{[{label:"Today",pct:todayScore},{label:"7-Day Avg",pct:wAvg},{label:"Month",pct:mAvg}].map(({label,pct})=>(<div key={label} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:"14px 8px",textAlign:"center",transition:"background 0.3s"}}><ScoreRing pct={pct} size={64} T={T}/><div style={{fontFamily:"'Jost',sans-serif",fontSize:10,color:T.dim,marginTop:6,textTransform:"uppercase",letterSpacing:"0.07em"}}>{label}</div></div>))}</div>
       <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,padding:"16px 14px",marginBottom:14,transition:"background 0.3s"}}>
-        <div style={{fontFamily:"'Jost',sans-serif",fontSize:13,fontWeight:600,color:T.textSub,marginBottom:14}}>Last 7 Days</div>
+        <div style={{fontFamily:"'Jost',sans-serif",fontSize:14,fontWeight:600,color:T.textSub,marginBottom:14}}>Last 7 Days</div>
         <ResponsiveContainer width="100%" height={140}><BarChart data={l7} barCategoryGap="28%"><CartesianGrid vertical={false} stroke={T.divider}/><XAxis dataKey="day" tick={{fontSize:11,fontFamily:"'Jost',sans-serif",fill:T.dim}} axisLine={false} tickLine={false}/><YAxis domain={[0,100]} tick={{fontSize:10,fontFamily:"'Jost',sans-serif",fill:T.dim}} axisLine={false} tickLine={false} tickCount={3}/><Tooltip contentStyle={TT} formatter={v=>[`${v}%`,"Score"]} cursor={{fill:T.divider}}/><Bar dataKey="score" fill="#f59e0b" radius={[5,5,0,0]}/></BarChart></ResponsiveContainer>
       </div>
       <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,padding:"16px 14px",marginBottom:14,transition:"background 0.3s"}}>
-        <div style={{fontFamily:"'Jost',sans-serif",fontSize:13,fontWeight:600,color:T.textSub,marginBottom:14}}>{new Date().toLocaleDateString("en-US",{month:"long",year:"numeric"})}</div>
+        <div style={{fontFamily:"'Jost',sans-serif",fontSize:14,fontWeight:600,color:T.textSub,marginBottom:14}}>{new Date().toLocaleDateString("en-US",{month:"long",year:"numeric"})}</div>
         <ResponsiveContainer width="100%" height={130}><LineChart data={mData}><CartesianGrid vertical={false} stroke={T.divider}/><XAxis dataKey="day" tick={{fontSize:10,fontFamily:"'Jost',sans-serif",fill:T.dim}} axisLine={false} tickLine={false} interval={4}/><YAxis domain={[0,100]} tick={{fontSize:10,fontFamily:"'Jost',sans-serif",fill:T.dim}} axisLine={false} tickLine={false} tickCount={3}/><Tooltip contentStyle={TT} formatter={v=>[`${v}%`,"Score"]}/><Line type="monotone" dataKey="score" stroke="#a78bfa" strokeWidth={2} dot={false} activeDot={{r:4,fill:"#a78bfa"}}/></LineChart></ResponsiveContainer>
       </div>
       <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,padding:"16px 14px",marginBottom:14,transition:"background 0.3s"}}>
-        <div style={{fontFamily:"'Jost',sans-serif",fontSize:13,fontWeight:600,color:T.textSub,marginBottom:14}}>All-Time</div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-          {[{label:"Days Logged",val:total,icon:"📅"},{label:"Avg Score",val:`${avg}%`,icon:"📊"},{label:"Current Streak",val:`${streak}d`,icon:"🔥"},{label:"Best Streak",val:`${best}d`,icon:"🏆"}].map(({label,val,icon})=>(
-            <div key={label} style={{background:T.cardInner,borderRadius:10,padding:"14px",textAlign:"center",transition:"background 0.3s"}}><div style={{fontSize:22,marginBottom:5}}>{icon}</div><div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:28,fontWeight:700,color:T.text,lineHeight:1}}>{val}</div><div style={{fontFamily:"'Jost',sans-serif",fontSize:10,color:T.dim,marginTop:5,textTransform:"uppercase",letterSpacing:"0.07em"}}>{label}</div></div>
-          ))}
-        </div>
+        <div style={{fontFamily:"'Jost',sans-serif",fontSize:14,fontWeight:600,color:T.textSub,marginBottom:14}}>All-Time</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>{[{label:"Days Logged",val:total,icon:"📅"},{label:"Avg Score",val:`${avg}%`,icon:"📊"},{label:"Current Streak",val:`${streak}d`,icon:"🔥"},{label:"Best Streak",val:`${best}d`,icon:"🏆"}].map(({label,val,icon})=>(<div key={label} style={{background:T.cardInner,borderRadius:10,padding:"14px",textAlign:"center",transition:"background 0.3s"}}><div style={{fontSize:22,marginBottom:5}}>{icon}</div><div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:28,fontWeight:700,color:T.text,lineHeight:1}}>{val}</div><div style={{fontFamily:"'Jost',sans-serif",fontSize:10,color:T.dim,marginTop:5,textTransform:"uppercase",letterSpacing:"0.07em"}}>{label}</div></div>))}</div>
       </div>
-      <ExportSection logs={logs} T={T} isPro={isPro} onRequirePro={onRequirePro} userEmail={userEmail}/>
+      {isPro?(<div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,padding:"16px 14px",marginBottom:14}}>
+        <div style={{fontFamily:"'Jost',sans-serif",fontSize:14,fontWeight:600,color:"#f59e0b",marginBottom:4}}>Export History</div>
+        <p style={{fontFamily:"'Jost',sans-serif",fontSize:14,color:T.muted,margin:"0 0 14px",lineHeight:1.5}}>Download your full practice history. On mobile, share to email, WhatsApp, or any app.</p>
+        <div style={{display:"flex",gap:10}}>
+          <button onClick={async()=>{setLoadingExport("csv");try{await exportCSV(logs);}catch(e){alert("Export failed: "+e.message);}setLoadingExport(null);}} disabled={loadingExport==="csv"} style={{flex:1,padding:"11px",borderRadius:10,background:T.cardInner,border:`1px solid ${T.border}`,fontFamily:"'Jost',sans-serif",fontSize:13,fontWeight:600,color:T.text,cursor:"pointer",opacity:loadingExport==="csv"?0.6:1}}>{loadingExport==="csv"?"Exporting…":"📊 Export CSV"}</button>
+          <button onClick={()=>exportPDF(logs,userEmail)} style={{flex:1,padding:"11px",borderRadius:10,background:T.cardInner,border:`1px solid ${T.border}`,fontFamily:"'Jost',sans-serif",fontSize:13,fontWeight:600,color:T.text,cursor:"pointer"}}>📄 Export PDF</button>
+        </div>
+      </div>):(<div onClick={onRequirePro} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,padding:"16px 14px",marginBottom:14,cursor:"pointer",display:"flex",gap:12,alignItems:"center"}}><div style={{fontSize:22}}>🔒</div><div><div style={{fontFamily:"'Jost',sans-serif",fontSize:13,fontWeight:600,color:T.textSub,marginBottom:2}}>Export History</div><div style={{fontFamily:"'Jost',sans-serif",fontSize:12,color:T.muted}}>Download as CSV or PDF · Pro feature</div></div></div>)}
       <ProAnalytics logs={logs} T={T} isPro={isPro} onRequirePro={onRequirePro}/>
+      <JournalSection logs={logs} T={T}/>
     </div>
-  );
+  </div>);
 }
 
-/* ═══════════════════════════ SETTINGS TAB ═══════════════════════════ */
-
-function SettingsTab({settings,onSave,T,dark,onToggleTheme,user,onSignOut,isPro,graceTokens,onRequirePro,viewMode,onSetViewMode}){
-  const[enabled,setEnabled]=useState(settings.enabled),[time,setTime]=useState(settings.time||"20:00");
-  const[permStatus,setPermStatus]=useState(typeof Notification!=="undefined"?Notification.permission:"unsupported");
-  const PS={fontFamily:"'Jost',sans-serif",fontSize:13,color:T.muted,lineHeight:1.65,margin:"0 0 8px"};
-  const handleToggleNotif=async()=>{if(!enabled){if(typeof Notification==="undefined"){alert("Not supported.");return;}const perm=await Notification.requestPermission();setPermStatus(perm);if(perm==="granted"){setEnabled(true);onSave({enabled:true,time});}}else{setEnabled(false);onSave({enabled:false,time});}};
-  const Toggle=({on,onPress})=>(<button onClick={onPress} style={{width:48,height:28,borderRadius:14,background:on?"#f59e0b":T.veryDim,border:"none",cursor:"pointer",position:"relative",transition:"background 0.25s",flexShrink:0}}><div style={{width:22,height:22,borderRadius:"50%",background:"#fff",position:"absolute",top:3,left:on?23:3,transition:"left 0.25s",boxShadow:"0 1px 4px rgba(0,0,0,0.3)"}}/></button>);
-
-  return(
-    <div style={{padding:"20px 16px 110px",maxWidth:480,margin:"0 auto"}}>
-      <h1 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:26,fontWeight:700,color:T.text,margin:"0 0 24px"}}>Settings</h1>
-
-      {/* Pro */}
-      <div style={{background:isPro?"#18181b":T.card,border:`1px solid ${isPro?"#f59e0b44":T.border}`,borderRadius:14,padding:"16px 14px",marginBottom:12,transition:"background 0.3s"}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-          <div style={{fontFamily:"'Jost',sans-serif",fontSize:13,fontWeight:600,color:"#f59e0b"}}>{isPro?"✦ Pro Active":"✦ Upgrade to Pro"}</div>
-          {isPro&&<div style={{fontFamily:"'Jost',sans-serif",fontSize:11,background:"#f59e0b22",color:"#f59e0b",padding:"2px 8px",borderRadius:20}}>Active</div>}
-        </div>
-        {isPro?(<><p style={{...PS,marginBottom:12}}>Analytics, custom actions, export, and streak protection are all unlocked.</p><div style={{display:"flex",gap:8,alignItems:"center"}}><div style={{fontSize:18}}>🛡️</div><div><div style={{fontFamily:"'Jost',sans-serif",fontSize:13,color:T.text,fontWeight:500}}>{graceTokens} grace token{graceTokens!==1?"s":""} remaining</div><div style={{fontFamily:"'Jost',sans-serif",fontSize:11,color:T.dim}}>Resets at the start of each month</div></div></div></>)
-        :(<><p style={{...PS,marginBottom:14}}>Unlock analytics, custom actions, export, and streak protection.</p><button onClick={onRequirePro} style={{background:"#f59e0b",border:"none",borderRadius:10,padding:"11px 20px",fontFamily:"'Jost',sans-serif",fontSize:14,fontWeight:600,color:"#09090b",cursor:"pointer"}}>View Pro features →</button></>)}
-      </div>
-
-      {/* Account */}
-      <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,padding:"16px 14px",marginBottom:12,transition:"background 0.3s"}}>
-        <div style={{fontFamily:"'Jost',sans-serif",fontSize:13,fontWeight:600,color:"#f59e0b",marginBottom:4}}>Account</div>
-        <p style={{...PS,marginBottom:14}}>Signed in as <strong style={{color:T.textSub}}>{user?.email}</strong>. Progress syncs across devices.</p>
-        <button onClick={onSignOut} style={{background:T.cardInner,border:`1px solid ${T.border}`,borderRadius:8,padding:"10px 16px",fontFamily:"'Jost',sans-serif",fontSize:13,color:"#f87171",cursor:"pointer",fontWeight:500}}>Sign out</button>
-      </div>
-
-      {/* Checklist Layout */}
-      <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,padding:"16px 14px",marginBottom:12,transition:"background 0.3s"}}>
-        <div style={{fontFamily:"'Jost',sans-serif",fontSize:13,fontWeight:600,color:"#f59e0b",marginBottom:4}}>Checklist Layout</div>
-        <p style={{...PS,marginBottom:14}}>Choose how habits appear in your daily check-in.</p>
-        <div style={{display:"flex",gap:6,background:T.cardInner,borderRadius:12,padding:4}}>
-          {[{id:"list",icon:"☰",label:"List"},{id:"grid",icon:"⊞",label:"Grid"}].map(v=>(
-            <button key={v.id} onClick={()=>onSetViewMode(v.id)} style={{flex:1,padding:"9px 8px",borderRadius:9,background:viewMode===v.id?T.dark?"#27272a":"#ffffff":"transparent",border:viewMode===v.id?`1px solid ${T.border}`:"1px solid transparent",cursor:"pointer",fontFamily:"'Jost',sans-serif",fontSize:13,color:viewMode===v.id?T.text:T.dim,fontWeight:viewMode===v.id?600:400,display:"flex",alignItems:"center",justifyContent:"center",gap:7,transition:"background 0.2s,color 0.2s",boxShadow:viewMode===v.id?"0 1px 4px rgba(0,0,0,0.15)":"none"}}>
-              <span style={{fontSize:15}}>{v.icon}</span>{v.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Appearance */}
-      <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,padding:"16px 14px",marginBottom:12,transition:"background 0.3s"}}>
-        <div style={{fontFamily:"'Jost',sans-serif",fontSize:13,fontWeight:600,color:"#f59e0b",marginBottom:14}}>Appearance</div>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <span style={{fontFamily:"'Jost',sans-serif",fontSize:14,color:T.textSub}}>{dark?"🌙 Dark mode":"☀️ Light mode"}</span>
-          <Toggle on={dark} onPress={onToggleTheme}/>
-        </div>
-      </div>
-
-      {/* Notifications */}
-      <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,padding:"16px 14px",marginBottom:12,transition:"background 0.3s"}}>
-        <div style={{fontFamily:"'Jost',sans-serif",fontSize:13,fontWeight:600,color:"#f59e0b",marginBottom:4}}>Daily Reminder</div>
-        <p style={{...PS,marginBottom:16}}>Get a notification each day at your chosen time.</p>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:enabled?18:0}}><span style={{fontFamily:"'Jost',sans-serif",fontSize:14,color:T.textSub}}>Enable reminders</span><Toggle on={enabled} onPress={handleToggleNotif}/></div>
-        {enabled&&(<div><label style={{fontFamily:"'Jost',sans-serif",fontSize:11,color:T.dim,display:"block",marginBottom:8,textTransform:"uppercase",letterSpacing:"0.07em"}}>Reminder time</label><input type="time" value={time} onChange={e=>{setTime(e.target.value);if(enabled)onSave({enabled:true,time:e.target.value});}} style={{background:T.cardInner,border:`1px solid ${T.border}`,borderRadius:10,padding:"12px 14px",fontFamily:"'Jost',sans-serif",fontSize:16,color:T.text,outline:"none",width:"100%",boxSizing:"border-box",colorScheme:dark?"dark":"light"}}/></div>)}
-        {permStatus==="denied"&&<p style={{fontFamily:"'Jost',sans-serif",fontSize:12,color:"#f87171",margin:"12px 0 0",lineHeight:1.55}}>Notifications blocked. Enable them in your browser or phone settings.</p>}
-      </div>
-    </div>
-  );
-}
-
-/* ═══════════════════════════ AUTH SCREEN ═══════════════════════════ */
-
-function AuthScreen({T}){
-  const[mode,setMode]=useState("login"),[email,setEmail]=useState(""),[password,setPassword]=useState("");
+function AuthScreen({T,initialMode,onBack}){
+  const[mode,setMode]=useState(initialMode||"login"),[email,setEmail]=useState(""),[password,setPassword]=useState("");
   const[loading,setLoading]=useState(false),[error,setError]=useState(""),[success,setSuccess]=useState("");
-  const inputStyle={display:"block",width:"100%",padding:"12px 14px",background:T.cardInner,border:`1px solid ${T.border}`,borderRadius:10,fontFamily:"'Jost',sans-serif",fontSize:14,color:T.text,outline:"none",boxSizing:"border-box",marginBottom:12};
-  const handleSubmit=async()=>{setError("");setSuccess("");setLoading(true);try{if(mode==="signup"){const{error}=await supabase.auth.signUp({email,password});if(error)throw error;setSuccess("Account created. You are now signed in.");}else{const{error}=await supabase.auth.signInWithPassword({email,password});if(error)throw error;}}catch(e){setError(e.message);}setLoading(false);};
+  const inputStyle={display:"block",width:"100%",padding:"13px 14px",background:T.cardInner,border:`1px solid ${T.border}`,borderRadius:10,fontFamily:"'Jost',sans-serif",fontSize:15,color:T.text,outline:"none",boxSizing:"border-box",marginBottom:12};
+  const handleSubmit=async()=>{setError("");setSuccess("");setLoading(true);try{if(mode==="signup"){const{error}=await supabase.auth.signUp({email,password});if(error)throw error;setSuccess("Account created. Signing you in…");}else{const{error}=await supabase.auth.signInWithPassword({email,password});if(error)throw error;}}catch(e){setError(e.message);}setLoading(false);};
   const handleReset=async()=>{if(!email){setError("Enter your email first.");return;}setLoading(true);const{error}=await supabase.auth.resetPasswordForEmail(email);if(error)setError(error.message);else setSuccess("Password reset email sent.");setLoading(false);};
-
-  return(
-    <div style={{minHeight:"100vh",background:T.bg,display:"flex",alignItems:"center",justifyContent:"center",padding:"24px",transition:"background 0.3s"}}>
+  return(<div style={{minHeight:"100vh",background:"#09090b",display:"flex",flexDirection:"column"}}>
+    <div style={{padding:"16px 20px"}}><button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",display:"flex",alignItems:"center",gap:6}}><ChevronLeft size={22} color="#a1a1aa"/><span style={{fontFamily:"'Jost',sans-serif",fontSize:14,color:"#a1a1aa"}}>Back</span></button></div>
+    <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:"24px"}}>
       <div style={{width:"100%",maxWidth:360}}>
-        <div style={{textAlign:"center",marginBottom:36}}><div style={{fontSize:40,marginBottom:12}}>📖</div><h1 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:28,fontWeight:700,color:T.text,margin:"0 0 6px"}}>7 Habits Tracker</h1><p style={{fontFamily:"'Jost',sans-serif",fontSize:13,color:T.muted,margin:0}}>{mode==="login"?"Sign in to sync your progress across devices.":"Create an account to get started."}</p></div>
-        <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:16,padding:"24px",transition:"background 0.3s"}}>
-          <input type="email" placeholder="Email address" value={email} onChange={e=>setEmail(e.target.value)} style={inputStyle}/>
-          <input type="password" placeholder="Password" value={password} onChange={e=>setPassword(e.target.value)} style={{...inputStyle,marginBottom:16}} onKeyDown={e=>e.key==="Enter"&&handleSubmit()}/>
-          {error&&<p style={{fontFamily:"'Jost',sans-serif",fontSize:12,color:"#f87171",margin:"0 0 12px",lineHeight:1.5}}>{error}</p>}
-          {success&&<p style={{fontFamily:"'Jost',sans-serif",fontSize:12,color:"#34d399",margin:"0 0 12px",lineHeight:1.5}}>{success}</p>}
-          <button onClick={handleSubmit} disabled={loading} style={{width:"100%",padding:"13px",borderRadius:10,background:"#f59e0b",border:"none",cursor:loading?"not-allowed":"pointer",fontFamily:"'Jost',sans-serif",fontSize:14,fontWeight:600,color:"#09090b",opacity:loading?0.7:1,marginBottom:12}}>{loading?"Please wait…":mode==="login"?"Sign In":"Create Account"}</button>
-          {mode==="login"&&<button onClick={handleReset} style={{width:"100%",background:"none",border:"none",cursor:"pointer",fontFamily:"'Jost',sans-serif",fontSize:12,color:T.dim,padding:"4px 0"}}>Forgot password?</button>}
-        </div>
-        <p style={{textAlign:"center",fontFamily:"'Jost',sans-serif",fontSize:13,color:T.dim,marginTop:20}}>{mode==="login"?"Don't have an account? ":"Already have an account? "}<button onClick={()=>{setMode(mode==="login"?"signup":"login");setError("");setSuccess("");}} style={{background:"none",border:"none",cursor:"pointer",color:"#f59e0b",fontFamily:"'Jost',sans-serif",fontSize:13,fontWeight:600,padding:0}}>{mode==="login"?"Sign up":"Sign in"}</button></p>
+        <div style={{textAlign:"center",marginBottom:36}}><div style={{fontSize:40,marginBottom:12}}>📖</div><h1 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:30,fontWeight:700,color:"#fafafa",margin:"0 0 6px"}}>{mode==="signup"?"Create Account":"Welcome Back"}</h1><p style={{fontFamily:"'Jost',sans-serif",fontSize:14,color:"#71717a",margin:0}}>{mode==="login"?"Sign in to sync your progress across devices.":"Start tracking your practice today."}</p></div>
+        <input type="email" placeholder="Email address" value={email} onChange={e=>setEmail(e.target.value)} style={{...inputStyle,background:"#18181b",border:"1px solid #27272a",color:"#fafafa"}}/>
+        <input type="password" placeholder="Password" value={password} onChange={e=>setPassword(e.target.value)} style={{...inputStyle,background:"#18181b",border:"1px solid #27272a",color:"#fafafa",marginBottom:16}} onKeyDown={e=>e.key==="Enter"&&handleSubmit()}/>
+        {error&&<p style={{fontFamily:"'Jost',sans-serif",fontSize:13,color:"#f87171",margin:"0 0 12px",lineHeight:1.5}}>{error}</p>}
+        {success&&<p style={{fontFamily:"'Jost',sans-serif",fontSize:13,color:"#34d399",margin:"0 0 12px",lineHeight:1.5}}>{success}</p>}
+        <button onClick={handleSubmit} disabled={loading} style={{width:"100%",padding:"15px",borderRadius:12,background:"#f59e0b",border:"none",cursor:loading?"not-allowed":"pointer",fontFamily:"'Jost',sans-serif",fontSize:16,fontWeight:600,color:"#09090b",opacity:loading?0.7:1,marginBottom:12}}>{loading?"Please wait…":mode==="login"?"Sign In":"Create Account"}</button>
+        {mode==="login"&&<button onClick={handleReset} style={{width:"100%",background:"none",border:"none",cursor:"pointer",fontFamily:"'Jost',sans-serif",fontSize:13,color:"#52525b",padding:"4px 0"}}>Forgot password?</button>}
+        <p style={{textAlign:"center",fontFamily:"'Jost',sans-serif",fontSize:14,color:"#52525b",marginTop:20}}>{mode==="login"?"Don't have an account? ":"Already have an account? "}<button onClick={()=>{setMode(mode==="login"?"signup":"login");setError("");setSuccess("");}} style={{background:"none",border:"none",cursor:"pointer",color:"#f59e0b",fontFamily:"'Jost',sans-serif",fontSize:14,fontWeight:600,padding:0}}>{mode==="login"?"Sign up":"Sign in"}</button></p>
       </div>
     </div>
-  );
+  </div>);
 }
-
-/* ═══════════════════════════ APP ═══════════════════════════ */
 
 export default function App(){
-  const[tab,setTab]=useState("daily");
+  const[page,setPage]=useState("daily");
+  const[menuOpen,setMenuOpen]=useState(false);
   const[habits,setHabits]=useState({});
   const[notes,setNotes]=useState({});
   const[logs,setLogs]=useState({});
@@ -954,12 +692,14 @@ export default function App(){
   const[viewMode,setViewMode]=useState("list");
   const[user,setUser]=useState(null);
   const[authReady,setAuthReady]=useState(false);
+  const[authMode,setAuthMode]=useState(null);
   const[isPro,setIsPro]=useState(false);
   const[customSubs,setCustomSubs]=useState({});
-  // customActions = { habitId: [{ id, text }] }
   const[customActions,setCustomActions]=useState({});
   const[graceTokens,setGraceTokens]=useState(2);
   const[showPaywall,setShowPaywall]=useState(false);
+  const[userName,setUserName]=useState("");
+  const[greeting,setGreeting]=useState("");
   const timer=useRef(null),notifTimer=useRef(null),saveTimer=useRef(null);
   const T=makeTheme(dark);
 
@@ -972,32 +712,22 @@ export default function App(){
   },[]);
 
   useEffect(()=>{
+    if(userName&&!greeting){setGreeting(getGreeting(userName,new Date().getHours()));}
+  },[userName]);
+
+  useEffect(()=>{
     if(!authReady)return;
     const savedTheme=localStorage.getItem("theme");if(savedTheme)setDark(savedTheme==="dark");
     const savedView=localStorage.getItem("viewMode");if(savedView)setViewMode(savedView);
-    const savedSettings=localStorage.getItem("settings");
-    if(savedSettings){const s=JSON.parse(savedSettings);setSettings(s);if(s.enabled&&typeof Notification!=="undefined"&&Notification.permission==="granted")scheduleNotif(s.time,notifTimer);}
+    const savedSettings=localStorage.getItem("settings");if(savedSettings){const s=JSON.parse(savedSettings);setSettings(s);if(s.enabled&&typeof Notification!=="undefined"&&Notification.permission==="granted")scheduleNotif(s.time,notifTimer);}
     const done=localStorage.getItem("onboarded");if(!done)setOnboarded(false);
-
     const loadData=async()=>{
       if(user){
         await ensureProfile(user);
         const profile=await fetchProfile(user.id);
-        if(profile){
-          setIsPro(profile.is_pro||false);
-          setCustomSubs(profile.custom_subs||{});
-          // custom_habits column repurposed: stores customActions { habitId: [{ id, text }] }
-          setCustomActions(profile.custom_habits||{});
-          setGraceTokens(profile.grace_tokens??2);
-          const thisMonth=localKey().slice(0,7);
-          if(profile.grace_tokens_month!==thisMonth){await updateProfile(user.id,{grace_tokens:2,grace_tokens_month:thisMonth});setGraceTokens(2);}
-        }
-        const remoteLogs=await fetchAllLogs(user.id);setLogs(remoteLogs);
-        const td=remoteLogs[localKey()];if(td){setHabits(td.habits||{});setNotes(td.notes||{});}
-      }else{
-        const localLogs=stor.all();setLogs(localLogs);
-        const td=localLogs[localKey()];if(td){setHabits(td.habits||{});setNotes(td.notes||{});}
-      }
+        if(profile){setIsPro(profile.is_pro||false);setCustomSubs(profile.custom_subs||{});setCustomActions(profile.custom_habits||{});setGraceTokens(profile.grace_tokens??2);if(profile.name){setUserName(profile.name);setGreeting(getGreeting(profile.name,new Date().getHours()));}const thisMonth=localKey().slice(0,7);if(profile.grace_tokens_month!==thisMonth){await updateProfile(user.id,{grace_tokens:2,grace_tokens_month:thisMonth});setGraceTokens(2);}}
+        const remoteLogs=await fetchAllLogs(user.id);setLogs(remoteLogs);const td=remoteLogs[localKey()];if(td){setHabits(td.habits||{});setNotes(td.notes||{});}
+      }else{const localLogs=stor.all();setLogs(localLogs);const td=localLogs[localKey()];if(td){setHabits(td.habits||{});setNotes(td.notes||{});}}
       setReady(true);
     };
     loadData();
@@ -1005,8 +735,7 @@ export default function App(){
 
   useEffect(()=>{
     if(!ready)return;
-    const totalSubs=getTotalSubs(customActions);
-    const s=calcScore(habits,totalSubs);
+    const totalSubs=getTotalSubs(customActions),s=calcScore(habits,totalSubs);
     const log={habits,notes,score:s,date:localKey()};
     stor.set(`log:${localKey()}`,log);setLogs(prev=>({...prev,[localKey()]:log}));
     setSaved(true);clearTimeout(timer.current);timer.current=setTimeout(()=>setSaved(false),2000);
@@ -1014,59 +743,44 @@ export default function App(){
   },[habits,notes,ready,customActions]);
 
   const handleActivatePro=async(key)=>{setIsPro(true);setShowPaywall(false);if(user){const h=await hashKey(key);await updateProfile(user.id,{is_pro:true,licence_key_hash:h});}};
-
-  const handleUpdateCustomSub=async(subId,text)=>{
-    const updated={...customSubs};if(text===null)delete updated[subId];else updated[subId]=text;
-    setCustomSubs(updated);if(user)await updateProfile(user.id,{custom_subs:updated});
-  };
-
-  const handleAddAction=async(habitId,text)=>{
-    const id=`ca_${habitId}_${Date.now()}`;
-    const updated={...customActions,[habitId]:[...(customActions[habitId]||[]),{id,text}]};
-    setCustomActions(updated);if(user)await updateProfile(user.id,{custom_habits:updated});
-  };
-
-  const handleDeleteAction=async(habitId,actionId)=>{
-    const updated={...customActions,[habitId]:(customActions[habitId]||[]).filter(a=>a.id!==actionId)};
-    const cleanedHabits={...habits};delete cleanedHabits[actionId];
-    setHabits(cleanedHabits);setCustomActions(updated);
-    if(user)await updateProfile(user.id,{custom_habits:updated});
-  };
-
+  const handleUpdateCustomSub=async(subId,text)=>{const updated={...customSubs};if(text===null)delete updated[subId];else updated[subId]=text;setCustomSubs(updated);if(user)await updateProfile(user.id,{custom_subs:updated});};
+  const handleAddAction=async(habitId,text)=>{const id=`ca_${habitId}_${Date.now()}`;const updated={...customActions,[habitId]:[...(customActions[habitId]||[]),{id,text}]};setCustomActions(updated);if(user)await updateProfile(user.id,{custom_habits:updated});};
+  const handleDeleteAction=async(habitId,actionId)=>{const updated={...customActions,[habitId]:(customActions[habitId]||[]).filter(a=>a.id!==actionId)};const cleanedHabits={...habits};delete cleanedHabits[actionId];setHabits(cleanedHabits);setCustomActions(updated);if(user)await updateProfile(user.id,{custom_habits:updated});};
   const saveSettings=(ns)=>{setSettings(ns);localStorage.setItem("settings",JSON.stringify(ns));if(ns.enabled&&typeof Notification!=="undefined"&&Notification.permission==="granted")scheduleNotif(ns.time,notifTimer);else clearTimeout(notifTimer.current);};
   const toggleTheme=()=>{const next=!dark;setDark(next);localStorage.setItem("theme",next?"dark":"light");};
-  const handleSetViewMode=(mode)=>{setViewMode(mode);localStorage.setItem("viewMode",mode);};
-  const handleSignOut=async()=>{await supabase.auth.signOut();setHabits({});setNotes({});setLogs({});setIsPro(false);setCustomSubs({});setCustomActions({});};
+  const handleSetViewMode=(m)=>{setViewMode(m);localStorage.setItem("viewMode",m);};
+  const handleSignOut=async()=>{await supabase.auth.signOut();setHabits({});setNotes({});setLogs({});setIsPro(false);setCustomSubs({});setCustomActions({});setUserName("");setGreeting("");};
+  const handleOnboardingDone=async(name)=>{localStorage.setItem("onboarded","true");setOnboarded(true);if(name&&user){await updateProfile(user.id,{name});setUserName(name);setGreeting(getGreeting(name,new Date().getHours()));}};
+  const handleSaveName=async(name)=>{setUserName(name);setGreeting(getGreeting(name,new Date().getHours()));if(user)await updateProfile(user.id,{name});};
   const requirePro=()=>setShowPaywall(true);
 
-  if(!authReady)return<div style={{background:T.bg,minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{fontFamily:"'Jost',sans-serif",color:T.dim,fontSize:14}}>Loading…</div></div>;
-  if(!user)return<AuthScreen T={T}/>;
-  if(!ready)return<div style={{background:T.bg,minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{fontFamily:"'Jost',sans-serif",color:T.dim,fontSize:14}}>Loading your data…</div></div>;
+  const Spinner=()=><div style={{background:"#09090b",minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center"}}><div style={{fontFamily:"'Jost',sans-serif",color:"#52525b",fontSize:14}}>Loading…</div></div>;
 
-  return(
-    <div style={{background:T.bg,minHeight:"100vh",transition:"background 0.3s"}}>
-      {!onboarded&&<Onboarding onDone={()=>{localStorage.setItem("onboarded","true");setOnboarded(true);}}/>}
-      {showPaywall&&<Paywall onClose={()=>setShowPaywall(false)} onActivate={handleActivatePro} T={T}/>}
-      {tab==="info"&&<InfoTab T={T}/>}
-      {tab==="daily"&&(
-        <DailyTab habits={habits} notes={notes} saved={saved} T={T}
-          isPro={isPro} customSubs={customSubs} customActions={customActions} viewMode={viewMode}
-          onToggle={id=>setHabits(p=>({...p,[id]:!p[id]}))}
-          onNote={(id,v)=>setNotes(p=>({...p,[id]:v}))}
-          onUpdateCustomSub={handleUpdateCustomSub}
-          onAddAction={handleAddAction}
-          onDeleteAction={handleDeleteAction}
-          onRequirePro={requirePro}/>
-      )}
-      {tab==="history"&&<HistoryTab logs={logs} T={T} isPro={isPro} onRequirePro={requirePro} userEmail={user?.email}/>}
-      {tab==="settings"&&(
-        <SettingsTab settings={settings} onSave={saveSettings} T={T}
-          dark={dark} onToggleTheme={toggleTheme}
-          user={user} onSignOut={handleSignOut}
-          isPro={isPro} graceTokens={graceTokens} onRequirePro={requirePro}
-          viewMode={viewMode} onSetViewMode={handleSetViewMode}/>
-      )}
-      <BottomNav tab={tab} setTab={setTab} T={T}/>
-    </div>
-  );
+  if(!authReady)return<Spinner/>;
+  if(!user){
+    if(!authMode)return<LandingPage onSignUp={()=>setAuthMode("signup")} onLogin={()=>setAuthMode("login")}/>;
+    return<AuthScreen T={T} initialMode={authMode} onBack={()=>setAuthMode(null)}/>;
+  }
+  if(!ready)return<Spinner/>;
+
+  const date=new Date().toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"});
+  const displayGreeting=greeting||(userName?`Hi, ${userName}.`:"Welcome back.");
+
+  return(<div style={{background:T.bg,minHeight:"100vh",transition:"background 0.3s"}}>
+    {!onboarded&&<Onboarding onDone={handleOnboardingDone}/>}
+    {showPaywall&&<Paywall onClose={()=>setShowPaywall(false)} onActivate={handleActivatePro} T={T} userId={user?.id}/>}
+    {menuOpen&&<SideMenu onNavigate={setPage} onClose={()=>setMenuOpen(false)} T={T} isPro={isPro}/>}
+
+    {page==="daily"&&(<>
+      <TopBar greeting={displayGreeting} date={date} onMenuOpen={()=>setMenuOpen(true)} T={T} saved={saved}/>
+      <DailyTab habits={habits} notes={notes} T={T} isPro={isPro} customSubs={customSubs} customActions={customActions} viewMode={viewMode}
+        onToggle={id=>setHabits(p=>({...p,[id]:!p[id]}))} onNote={(id,v)=>setNotes(p=>({...p,[id]:v}))}
+        onUpdateCustomSub={handleUpdateCustomSub} onAddAction={handleAddAction} onDeleteAction={handleDeleteAction} onRequirePro={requirePro}/>
+      <FloatingHistoryBtn onPress={()=>setPage("history")}/>
+    </>)}
+    {page==="history"&&<HistoryPage onBack={()=>setPage("daily")} logs={logs} T={T} isPro={isPro} onRequirePro={requirePro} userEmail={user?.email}/>}
+    {page==="settings"&&<SettingsPage onBack={()=>setPage("daily")} T={T} dark={dark} onToggleTheme={toggleTheme} user={user} onSignOut={handleSignOut} settings={settings} onSave={saveSettings} viewMode={viewMode} onSetViewMode={handleSetViewMode} userName={userName} onSaveName={handleSaveName}/>}
+    {page==="pro"&&<ProPage onBack={()=>setPage("daily")} T={T} isPro={isPro} graceTokens={graceTokens} onOpenPaywall={requirePro}/>}
+    {page==="about"&&<AboutPage onBack={()=>setPage("daily")} T={T}/>}
+  </div>);
 }
