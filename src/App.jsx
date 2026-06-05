@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { MoreVertical, TrendingUp, Settings, Sparkles, BookOpen, ChevronLeft } from "lucide-react";
+import { MoreVertical, TrendingUp, Settings, Sparkles, BookOpen, ChevronLeft, Home } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, CartesianGrid, Cell } from "recharts";
 import { supabase } from "./supabase";
 
@@ -173,13 +173,27 @@ const verifyKey=async(key)=>PRO_HASHES.includes(await hashKey(key.trim().toUpper
 const claimLicenceKey=async(key,userId)=>{
   const h=await hashKey(key.trim().toUpperCase());
   if(!PRO_HASHES.includes(h))return{success:false,error:"Invalid key. Check and try again."};
-  const{data:ex}=await supabase.from("licence_keys").select("claimed_by").eq("key_hash",h).eq("claimed_by",userId).single().catch(()=>({data:null}));
-  if(ex)return{success:true};
+
+  // Check if this key has been claimed by anyone
+  const{data:claimed}=await supabase.from("licence_keys").select("claimed_by").eq("key_hash",h).limit(1);
+
+  if(claimed&&claimed.length>0){
+    if(claimed[0].claimed_by===userId)return{success:true}; // their own key, re-activating
+    return{success:false,error:"This key has already been used by another account."};
+  }
+
+  // Key is unclaimed — insert it
   const{error:ie}=await supabase.from("licence_keys").insert({key_hash:h,claimed_by:userId});
-  if(ie){if(ie.code==="23505")return{success:false,error:"This key has already been used by another account."};return{success:false,error:"Activation failed. Please try again."};}
+  if(ie){
+    if(ie.code==="23505"){
+      const{data:recheck}=await supabase.from("licence_keys").select("claimed_by").eq("key_hash",h).limit(1);
+      if(recheck?.[0]?.claimed_by===userId)return{success:true};
+      return{success:false,error:"This key has already been used by another account."};
+    }
+    return{success:false,error:"Activation failed. Please try again."};
+  }
   return{success:true};
 };
-
 const makeTheme=(dark)=>({dark,bg:dark?"#09090b":"#f7f7f2",card:dark?"#18181b":"#ffffff",cardInner:dark?"#09090b":"#f2f2ed",border:dark?"#27272a":"#e4e4df",divider:dark?"#1f1f23":"#ebebeb",text:dark?"#fafafa":"#0f0f0f",textSub:dark?"#e4e4e7":"#1a1a1a",muted:dark?"#a1a1aa":"#6b6b6b",dim:dark?"#52525b":"#9b9b9b",veryDim:dark?"#3f3f46":"#c8c8c3",navBg:dark?"rgba(9,9,11,0.97)":"rgba(247,247,242,0.97)",trackRing:dark?"#27272a":"#e4e4df",sheetBg:dark?"#18181b":"#ffffff"});
 const localKey=(d=new Date())=>{const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,"0"),day=String(d.getDate()).padStart(2,"0");return`${y}-${m}-${day}`;};
 const getTotalSubs=(ca={})=>TOTAL_DEFAULT_SUBS+Object.values(ca).reduce((s,a)=>s+a.length,0);
@@ -193,11 +207,9 @@ const fmtDate=(key)=>{const[y,m,d]=key.split("-").map(Number);return new Date(y,
 
 const stor={get:(k)=>{try{const v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch{return null;}},set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch{}},all:()=>{const r={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k?.startsWith("log:")){try{r[k.replace("log:","")]=JSON.parse(localStorage.getItem(k));}catch{}}}return r;}};
 const syncLog=async(uid,dk,log)=>{try{await supabase.from("logs").upsert({user_id:uid,date:dk,habits:log.habits,notes:log.notes,score:log.score},{onConflict:"user_id,date"});}catch{}};
-const fetchAllLogs=async(uid)=>{try{const{data,error}=await supabase.from("logs").select("*").eq("user_id",uid).order("date",{ascending:true});if(error)throw error;const r={};data.forEach(row=>{r[row.date]={habits:row.habits||{},notes:row.notes||{},score:row.score||0};});return r;}catch{return stor.all();}};
-const fetchProfile=async(uid)=>{try{const{data}=await supabase.from("profiles").select("is_pro,custom_subs,custom_habits,grace_tokens,grace_tokens_month,name").eq("id",uid).single();return data;}catch{return null;}};
+const fetchAllLogs=async(uid)=>{try{const{data,error}=await supabase.from("logs").select("*").eq("user_id",uid).order("date",{ascending:true});if(error)throw error;const r={};data.forEach(row=>{r[row.date]={habits:row.habits||{},notes:row.notes||{},score:row.score||0};});return r;}catch{return{};}};const fetchProfile=async(uid)=>{try{const{data}=await supabase.from("profiles").select("is_pro,custom_subs,custom_habits,grace_tokens,grace_tokens_month,name").eq("id",uid).single();return data;}catch{return null;}};
 const ensureProfile=async(user)=>{try{const{data}=await supabase.from("profiles").select("id").eq("id",user.id).single();if(!data)await supabase.from("profiles").insert({id:user.id,email:user.email,is_pro:false,name:""});}catch{}};
 const updateProfile=async(uid,updates)=>{try{await supabase.from("profiles").update(updates).eq("id",uid);}catch{}};
-
 const generateCSV=(logs)=>{const headers=["Date","Score","Actions Done","Total Possible",...HABITS.map(h=>`"${h.name}"`),"Notes"].join(",");const rows=Object.entries(logs).sort(([a],[b])=>a.localeCompare(b)).map(([date,log])=>{const done=Object.values(log.habits||{}).filter(Boolean).length;const habitCols=HABITS.map(h=>{const subs=DEFAULT_SUBS[h.id],d=subs.filter(s=>log.habits?.[s.id]).length;if(d===subs.length)return"Complete";if(d>0)return`${d}/${subs.length}`;return"Skipped";});const notes=Object.values(log.notes||{}).filter(Boolean).join(" | ").replace(/"/g,"'");return[date,`${log.score||0}%`,done,TOTAL_DEFAULT_SUBS,...habitCols,`"${notes}"`].join(",");});return[headers,...rows].join("\n");};
 const shareOrDownload=async(blob,filename,title)=>{try{const file=new File([blob],filename,{type:blob.type});if(navigator.share&&navigator.canShare?.({files:[file]})){await navigator.share({files:[file],title});return;}}catch{}const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=filename;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);};
 const exportCSV=async(logs)=>{await shareOrDownload(new Blob([generateCSV(logs)],{type:"text/csv"}),"7-habits-history.csv","7 Habits History");};
@@ -211,8 +223,7 @@ function LandingPage({onSignUp,onLogin}){
   return(
     <div style={{minHeight:"100vh",background:"linear-gradient(180deg,#09090b 0%,#0d0d12 100%)",display:"flex",flexDirection:"column",padding:"0 28px"}}>
       <div style={{flex:1,display:"flex",flexDirection:"column",justifyContent:"center",paddingTop:60}}>
-        <div style={{width:64,height:64,borderRadius:18,background:"#f59e0b",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:28,fontSize:28,color:"#09090b",fontWeight:700}}>✦</div>
-        <h1 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:44,fontWeight:700,color:"#fafafa",margin:"0 0 16px",lineHeight:1.1}}>Build the life<br/>Covey described.</h1>
+      <div style={{width:68,height:68,borderRadius:20,background:"#f59e0b",display:"flex",alignItems:"center",justifyContent:"center",marginBottom:28,boxShadow:"0 8px 32px rgba(245,158,11,0.4)"}}><TrendingUp size={34} color="#09090b" strokeWidth={2.5}/></div>        <h1 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:44,fontWeight:700,color:"#fafafa",margin:"0 0 16px",lineHeight:1.1}}>Build the life<br/>Covey described.</h1>
         <p style={{fontFamily:"'Jost',sans-serif",fontSize:17,color:"#a1a1aa",lineHeight:1.7,margin:"0 0 40px"}}>Turn one of the world's most powerful frameworks into a daily practice you can actually track.</p>
         {[["✓","Daily checklist for all 7 habits with specific actions"],["✓","Score your practice and track your streak every day"],["✓","See your growth over weeks and months"]].map(([icon,text])=>(
           <div key={text} style={{display:"flex",gap:14,marginBottom:14,alignItems:"flex-start"}}>
@@ -251,6 +262,13 @@ function FloatingHistoryBtn({onPress}){
   return(
     <button onClick={onPress} style={{position:"fixed",bottom:"calc(env(safe-area-inset-bottom,0px) + 24px)",left:"50%",transform:"translateX(-50%)",zIndex:40,width:58,height:58,borderRadius:"50%",background:"#f59e0b",border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 24px rgba(245,158,11,0.45)",WebkitTapHighlightColor:"transparent"}}>
       <TrendingUp size={26} color="#09090b" strokeWidth={2.5}/>
+    </button>
+  );
+}
+function FloatingHomeBtn({onPress}){
+  return(
+    <button onClick={onPress} style={{position:"fixed",bottom:"calc(env(safe-area-inset-bottom,0px) + 24px)",left:"50%",transform:"translateX(-50%)",zIndex:40,width:58,height:58,borderRadius:"50%",background:"#f59e0b",border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 24px rgba(245,158,11,0.45)",WebkitTapHighlightColor:"transparent"}}>
+      <Home size={26} color="#09090b" strokeWidth={2.5}/>
     </button>
   );
 }
@@ -312,8 +330,7 @@ function Onboarding({onDone}){
 
 function Paywall({onClose,onActivate,T,userId}){
   const[mode,setMode]=useState("pitch"),[keyInput,setKeyInput]=useState(""),[loading,setLoading]=useState(false),[error,setError]=useState(""),[success,setSuccess]=useState(false);
-  const handleActivate=async()=>{if(!keyInput.trim()){setError("Please enter your licence key.");return;}setLoading(true);setError("");const result=await claimLicenceKey(keyInput,userId);if(result.success){setSuccess(true);setTimeout(()=>onActivate(keyInput.trim().toUpperCase()),1200);}else setError(result.error);setLoading(false);};
-  return(
+  const handleActivate=async()=>{if(!keyInput.trim()){setError("Please enter your licence key.");return;}setLoading(true);setError("");try{const result=await claimLicenceKey(keyInput,userId);if(result.success){setSuccess(true);setTimeout(()=>onActivate(keyInput.trim().toUpperCase()),1200);}else setError(result.error);}catch(e){setError("Something went wrong. Please try again.");}finally{setLoading(false);}};  return(
     <div style={{position:"fixed",inset:0,zIndex:100,display:"flex",alignItems:"flex-end"}}>
       <div onClick={onClose} style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.75)"}}/>
       <div style={{position:"relative",width:"100%",background:T.dark?"#18181b":"#fff",borderRadius:"20px 20px 0 0",padding:"28px 20px 48px",maxWidth:480,margin:"0 auto",zIndex:1,maxHeight:"90vh",overflowY:"auto"}}>
@@ -396,6 +413,7 @@ function AboutPage({onBack,T}){
         ))}
         <div><h2 style={HS}>FAQs</h2>{FAQS.map((f,i)=>(<div key={i} style={{borderBottom:`1px solid ${T.border}`}}><button onClick={()=>setOpenFaq(openFaq===i?null:i)} style={{width:"100%",background:"none",border:"none",cursor:"pointer",padding:"15px 0",display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,textAlign:"left"}}><span style={{fontFamily:"'Jost',sans-serif",fontSize:16,fontWeight:500,color:T.textSub,lineHeight:1.45}}>{f.q}</span><span style={{color:T.dim,fontSize:22,flexShrink:0}}>{openFaq===i?"−":"+"}</span></button>{openFaq===i&&<p style={{...PS,paddingBottom:14,marginTop:-6}}>{f.a}</p>}</div>))}</div>
       </div>
+      <FloatingHomeBtn onPress={onBack}/>
     </div>
   );
 }
@@ -652,6 +670,8 @@ function HistoryPage({onBack,logs,T,isPro,onRequirePro,userEmail}){
       <ProAnalytics logs={logs} T={T} isPro={isPro} onRequirePro={onRequirePro}/>
       <JournalSection logs={logs} T={T}/>
     </div>
+    <FloatingHomeBtn onPress={onBack}/>
+    
   </div>);
 }
 
@@ -726,8 +746,19 @@ export default function App(){
         await ensureProfile(user);
         const profile=await fetchProfile(user.id);
         if(profile){setIsPro(profile.is_pro||false);setCustomSubs(profile.custom_subs||{});setCustomActions(profile.custom_habits||{});setGraceTokens(profile.grace_tokens??2);if(profile.name){setUserName(profile.name);setGreeting(getGreeting(profile.name,new Date().getHours()));}const thisMonth=localKey().slice(0,7);if(profile.grace_tokens_month!==thisMonth){await updateProfile(user.id,{grace_tokens:2,grace_tokens_month:thisMonth});setGraceTokens(2);}}
-        const remoteLogs=await fetchAllLogs(user.id);setLogs(remoteLogs);const td=remoteLogs[localKey()];if(td){setHabits(td.habits||{});setNotes(td.notes||{});}
-      }else{const localLogs=stor.all();setLogs(localLogs);const td=localLogs[localKey()];if(td){setHabits(td.habits||{});setNotes(td.notes||{});}}
+        const remoteLogs=await fetchAllLogs(user.id);
+        setLogs(remoteLogs);
+        // Always reset habits/notes to the new user's data (even if empty)
+        const td=remoteLogs[localKey()];
+        setHabits(td?.habits||{});
+        setNotes(td?.notes||{});
+      }else{
+            const localLogs=stor.all();
+            setLogs(localLogs);
+            const td=localLogs[localKey()];
+            setHabits(td?.habits||{});
+            setNotes(td?.notes||{});
+          }
       setReady(true);
     };
     loadData();
@@ -749,7 +780,7 @@ export default function App(){
   const saveSettings=(ns)=>{setSettings(ns);localStorage.setItem("settings",JSON.stringify(ns));if(ns.enabled&&typeof Notification!=="undefined"&&Notification.permission==="granted")scheduleNotif(ns.time,notifTimer);else clearTimeout(notifTimer.current);};
   const toggleTheme=()=>{const next=!dark;setDark(next);localStorage.setItem("theme",next?"dark":"light");};
   const handleSetViewMode=(m)=>{setViewMode(m);localStorage.setItem("viewMode",m);};
-  const handleSignOut=async()=>{await supabase.auth.signOut();setHabits({});setNotes({});setLogs({});setIsPro(false);setCustomSubs({});setCustomActions({});setUserName("");setGreeting("");};
+  const handleSignOut=async()=>{await supabase.auth.signOut();localStorage.removeItem(`log:${localKey()}`);setHabits({});setNotes({});setLogs({}); setIsPro(false);setCustomSubs({});setCustomActions({}); setUserName("");setGreeting("");};
   const handleOnboardingDone=async(name)=>{localStorage.setItem("onboarded","true");setOnboarded(true);if(name&&user){await updateProfile(user.id,{name});setUserName(name);setGreeting(getGreeting(name,new Date().getHours()));}};
   const handleSaveName=async(name)=>{setUserName(name);setGreeting(getGreeting(name,new Date().getHours()));if(user)await updateProfile(user.id,{name});};
   const requirePro=()=>setShowPaywall(true);
