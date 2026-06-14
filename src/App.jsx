@@ -223,6 +223,28 @@ function FloatingHomeBtn({onPress}){return(<button onClick={onPress} style={{pos
 
 function FloatingMatrixBtn({onPress}){return(<button onClick={onPress} style={{position:"fixed",bottom:"calc(env(safe-area-inset-bottom,0px) + 24px)",left:"50%",transform:"translateX(-50%)",zIndex:40,width:58,height:58,borderRadius:"50%",background:"#f59e0b",border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 24px rgba(245,158,11,0.45)",WebkitTapHighlightColor:"transparent"}}><LayoutGrid size={26} color="#09090b" strokeWidth={2}/></button>);}
 
+function SpeedDialFAB({onHistory,onMatrix}){
+  const[open,setOpen]=useState(false);
+  const toggle=()=>setOpen(o=>!o);
+  const go=(fn)=>{setOpen(false);fn();};
+  return(<>
+    {open&&<div onClick={()=>setOpen(false)} style={{position:"fixed",inset:0,zIndex:38}}/>}
+    <div style={{position:"fixed",bottom:"calc(env(safe-area-inset-bottom,0px) + 24px)",left:"50%",transform:"translateX(-50%)",zIndex:39,display:"flex",flexDirection:"column",alignItems:"center",gap:12}}>
+      <div style={{display:"flex",alignItems:"center",gap:10,opacity:open?1:0,transform:open?"translateY(0)":"translateY(20px)",transition:"all 0.25s cubic-bezier(0.4,0,0.2,1)",pointerEvents:open?"auto":"none"}}>
+        <span style={{fontFamily:"'Jost',sans-serif",fontSize:12,fontWeight:600,color:"#fafafa",background:"rgba(0,0,0,0.7)",padding:"4px 10px",borderRadius:20,whiteSpace:"nowrap"}}>Progress</span>
+        <button onClick={()=>go(onHistory)} style={{width:46,height:46,borderRadius:"50%",background:"#a78bfa",border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 16px rgba(167,139,250,0.45)",WebkitTapHighlightColor:"transparent"}}><TrendingUp size={22} color="#fff" strokeWidth={2.5}/></button>
+      </div>
+      <div style={{display:"flex",alignItems:"center",gap:10,opacity:open?1:0,transform:open?"translateY(0)":"translateY(20px)",transition:"all 0.2s cubic-bezier(0.4,0,0.2,1) 0.05s",pointerEvents:open?"auto":"none"}}>
+        <span style={{fontFamily:"'Jost',sans-serif",fontSize:12,fontWeight:600,color:"#fafafa",background:"rgba(0,0,0,0.7)",padding:"4px 10px",borderRadius:20,whiteSpace:"nowrap"}}>Time Matrix</span>
+        <button onClick={()=>go(onMatrix)} style={{width:46,height:46,borderRadius:"50%",background:"#34d399",border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 16px rgba(52,211,153,0.45)",WebkitTapHighlightColor:"transparent"}}><LayoutGrid size={22} color="#fff" strokeWidth={2}/></button>
+      </div>
+      <button onClick={toggle} style={{width:58,height:58,borderRadius:"50%",background:"#f59e0b",border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 24px rgba(245,158,11,0.45)",WebkitTapHighlightColor:"transparent",transform:open?"rotate(45deg)":"rotate(0deg)",transition:"transform 0.25s cubic-bezier(0.4,0,0.2,1)"}}>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#09090b" strokeWidth="2.5" strokeLinecap="round"/></svg>
+      </button>
+    </div>
+  </>);
+}
+
 function SideMenu({onNavigate,onClose,T,isPro}){
   const[visible,setVisible]=useState(false);
   useEffect(()=>{requestAnimationFrame(()=>requestAnimationFrame(()=>setVisible(true)));return()=>{};}, []);
@@ -300,54 +322,156 @@ function HabitCard({habit,defaultSubs,customActionsForHabit,checkedMap,onToggle,
   return(<div style={{background:T.card,borderRadius:14,marginBottom:10,border:`1px solid ${allDone?gc+"55":exp?T.veryDim:T.border}`,transition:"border-color 0.25s ease,background 0.3s",overflow:"hidden"}}><button onClick={()=>setExp(!exp)} style={{width:"100%",background:"none",border:"none",cursor:"pointer",padding:"13px 14px",display:"flex",gap:12,alignItems:"center",textAlign:"left"}}><div style={{width:28,height:28,borderRadius:"50%",flexShrink:0,background:allDone?gc:T.cardInner,color:allDone?(T.dark?"#09090b":"#fff"):T.dim,border:`1px solid ${allDone?"transparent":T.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,fontFamily:"'Jost',sans-serif",transition:"background 0.2s"}}>{habit.id}</div><div style={{flex:1,minWidth:0}}><div style={{fontFamily:"'Jost',sans-serif",fontWeight:600,fontSize:16,color:T.text,lineHeight:1.3}}>{habit.name}</div><div style={{fontFamily:"'Jost',sans-serif",fontSize:12,color:gc,marginTop:2}}>{habit.tag}</div></div><div style={{display:"flex",alignItems:"center",gap:8,flexShrink:0}}><div style={{display:"flex",gap:4}}>{defaultSubs.map(s=><div key={s.id} style={{width:7,height:7,borderRadius:"50%",background:checkedMap[s.id]?gc:T.veryDim,transition:"background 0.2s"}}/>)}{customActionsForHabit.map(a=><div key={a.id} style={{width:7,height:7,borderRadius:"50%",background:checkedMap[a.id]?gc:gc+"33",border:`1px solid ${gc}55`}}/>)}</div><span style={{color:T.dim,fontSize:13}}>{exp?"▴":"▾"}</span></div></button>{exp&&(<div style={{borderTop:`1px solid ${T.border}`}}><div style={{padding:"4px 14px 12px"}}><SubHabitList habitId={habit.id} defaultSubs={defaultSubs} customActionsForHabit={customActionsForHabit} checkedMap={checkedMap} onToggle={onToggle} customSubs={customSubs} onUpdateCustomSub={onUpdateCustomSub} isPro={isPro} onRequirePro={onRequirePro} onAddAction={onAddAction} onDeleteAction={onDeleteAction} T={T}/></div><div style={{padding:"0 14px 12px",borderTop:`1px solid ${T.divider}`}}><button onClick={()=>setRefExp(!refExp)} style={{background:"none",border:"none",cursor:"pointer",padding:"8px 0 0",fontFamily:"'Jost',sans-serif",fontSize:12,color:refExp?gc:T.veryDim,display:"flex",alignItems:"center",gap:4}}><span>{refExp?"▾":"▸"}</span><span>{note?"Edit reflection":"Add reflection"}</span></button>{refExp&&<textarea value={note} onChange={e=>onNote(e.target.value)} placeholder="What did this look like for you today?" style={{display:"block",width:"100%",marginTop:6,background:T.cardInner,border:`1px solid ${T.border}`,borderRadius:8,padding:"8px 10px",fontFamily:"'Jost',sans-serif",fontSize:13,color:T.text,resize:"none",height:70,outline:"none",lineHeight:1.5,boxSizing:"border-box"}}/>}{!refExp&&note&&<p style={{fontFamily:"'Jost',sans-serif",fontSize:12,color:T.veryDim,margin:"4px 0 0",lineHeight:1.4,fontStyle:"italic"}}>"{note.length>80?note.slice(0,80)+"…":note}"</p>}</div></div>)}</div>);
 }
 
-function DailyTab({habits,notes,onToggle,onNote,T,isPro,customSubs,customActions,onUpdateCustomSub,onAddAction,onDeleteAction,onRequirePro,viewMode,missionStatement}){
+function DailyTab({habits,notes,onToggle,onNote,T,isPro,customSubs,customActions,onUpdateCustomSub,onAddAction,onDeleteAction,onRequirePro,viewMode,missionStatement,onGoToMission}){
   const[activeSheet,setActiveSheet]=useState(null);
   const totalSubs=getTotalSubs(customActions);const s=calcScore(habits,totalSubs);const done=Object.values(habits).filter(Boolean).length;
   const groups=[{gi:0,label:"Private Victory",color:GC[0]},{gi:1,label:"Public Victory",color:GC[1]},{gi:2,label:"Renewal",color:GC[2]}];
   const isGrid=viewMode==="grid";
   return(<div style={{padding:"12px 16px 120px",maxWidth:480,margin:"0 auto"}}>
     {activeSheet&&<HabitSheet habit={activeSheet} subs={DEFAULT_SUBS[activeSheet.id]} customActionsForHabit={customActions[activeSheet.id]||[]} checkedMap={habits} onToggle={onToggle} note={notes[activeSheet.id]||""} onNote={v=>onNote(activeSheet.id,v)} T={T} isPro={isPro} customSubs={customSubs} onUpdateCustomSub={onUpdateCustomSub} onRequirePro={onRequirePro} onAddAction={onAddAction} onDeleteAction={onDeleteAction} onClose={()=>setActiveSheet(null)}/>}
-    {missionStatement&&<div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:"12px 14px",marginBottom:14}}><div style={{fontFamily:"'Jost',sans-serif",fontSize:10,color:"#f59e0b",fontWeight:600,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:5}}>✦ Your Mission</div><div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:15,color:T.textSub,lineHeight:1.55,fontStyle:"italic"}}>"{missionStatement.length>130?missionStatement.slice(0,130)+"…":missionStatement}"</div></div>}
+    {missionStatement&&<div onClick={onGoToMission} style={{background:T.card,border:`1px solid #f59e0b33`,borderRadius:12,padding:"12px 14px",marginBottom:14,cursor:"pointer",WebkitTapHighlightColor:"transparent"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:5}}><div style={{fontFamily:"'Jost',sans-serif",fontSize:10,color:"#f59e0b",fontWeight:600,textTransform:"uppercase",letterSpacing:"0.08em"}}>✦ Your Mission</div><div style={{fontFamily:"'Jost',sans-serif",fontSize:10,color:"#f59e0b",opacity:0.7}}>tap to view →</div></div><div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:15,color:T.textSub,lineHeight:1.55,fontStyle:"italic"}}>"{missionStatement.length>130?missionStatement.slice(0,130)+"…":missionStatement}"</div></div>}
     <div style={{display:"flex",justifyContent:"center",alignItems:"center",gap:14,padding:"8px 0 16px"}}><ScoreRing pct={s} size={86} T={T}/><div><div style={{fontFamily:"'Jost',sans-serif",fontSize:14,color:T.dim}}>{done}/{totalSubs} actions today</div>{done===totalSubs&&totalSubs>0&&<div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:16,color:"#34d399",marginTop:2}}>All done. ✦</div>}</div></div>
     {groups.map((g,gi)=>{const groupHabits=HABITS.filter(h=>h.gi===g.gi);return(<div key={g.gi}><div style={{display:"flex",alignItems:"center",gap:8,margin:gi===0?"0 0 12px":"18px 0 12px"}}><div style={{width:3,height:12,borderRadius:2,background:g.color,flexShrink:0}}/><span style={{fontFamily:"'Jost',sans-serif",fontSize:11,fontWeight:600,textTransform:"uppercase",letterSpacing:"0.09em",color:g.color}}>{g.label}</span></div>{isGrid?(<div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:4}}>{groupHabits.map(h=><GridHabitCard key={h.id} habit={h} subs={DEFAULT_SUBS[h.id]} customActionsCount={(customActions[h.id]||[]).length} checkedMap={habits} T={T} onClick={()=>setActiveSheet(h)}/>)}</div>):(<div>{groupHabits.map(h=><HabitCard key={h.id} habit={h} defaultSubs={DEFAULT_SUBS[h.id]} customActionsForHabit={customActions[h.id]||[]} checkedMap={habits} onToggle={onToggle} note={notes[h.id]||""} onNote={v=>onNote(h.id,v)} T={T} isPro={isPro} customSubs={customSubs} onUpdateCustomSub={onUpdateCustomSub} onRequirePro={onRequirePro} onAddAction={onAddAction} onDeleteAction={onDeleteAction}/>)}</div>)}</div>);})}
     {done===totalSubs&&totalSubs>0&&<div style={{textAlign:"center",padding:"20px 0 4px",fontFamily:"'Cormorant Garamond',serif",fontSize:19,color:"#34d399"}}>All {totalSubs} actions completed today. ✦</div>}
   </div>);
 }
 
+function QuadrantSheet({quad,tasks,T,onToggle,onDelete,onClose}){
+  const[visible,setVisible]=useState(false);
+  useEffect(()=>{requestAnimationFrame(()=>requestAnimationFrame(()=>setVisible(true)));return()=>{};}, []);
+  const handleClose=()=>{setVisible(false);setTimeout(onClose,320);};
+  const{q,label,sub,color}=quad;
+  return(<div style={{position:"fixed",inset:0,zIndex:110,display:"flex",alignItems:"flex-end"}}>
+    <div onClick={handleClose} style={{position:"absolute",inset:0,background:`rgba(0,0,0,${visible?0.65:0})`,transition:"background 0.32s"}}/>
+    <div style={{position:"relative",width:"100%",zIndex:1,background:T.sheetBg,borderRadius:"22px 22px 0 0",maxWidth:480,margin:"0 auto",maxHeight:"80vh",overflowY:"auto",transform:visible?"translateY(0)":"translateY(100%)",transition:"transform 0.35s cubic-bezier(0.4,0,0.2,1)",paddingBottom:"calc(env(safe-area-inset-bottom,0px) + 24px)",boxShadow:"0 -8px 40px rgba(0,0,0,0.4)"}}>
+      <div style={{display:"flex",justifyContent:"center",padding:"12px 0"}}><div style={{width:36,height:4,borderRadius:2,background:T.veryDim}}/></div>
+      <div style={{padding:"0 20px 16px",display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+        <div><div style={{display:"flex",alignItems:"center",gap:10,marginBottom:4}}><div style={{width:10,height:10,borderRadius:"50%",background:color,flexShrink:0}}/><span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:22,fontWeight:700,color:T.text}}>{label}</span><span style={{fontFamily:"'Jost',sans-serif",fontSize:11,background:color+"22",color,padding:"2px 8px",borderRadius:20,fontWeight:600}}>Q{q}</span></div><div style={{fontFamily:"'Jost',sans-serif",fontSize:12,color:T.dim,paddingLeft:20}}>{sub}</div></div>
+        <button onClick={handleClose} style={{width:32,height:32,borderRadius:"50%",background:T.cardInner,border:`1px solid ${T.border}`,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",color:T.dim,fontSize:14,flexShrink:0}}>✕</button>
+      </div>
+      <div style={{padding:"0 20px"}}>
+        {tasks.length===0?(<p style={{fontFamily:"'Jost',sans-serif",fontSize:14,color:T.dim,fontStyle:"italic",margin:0,padding:"8px 0"}}>No tasks here yet.</p>)
+        :tasks.map(task=>(<div key={task.id} style={{display:"flex",gap:12,alignItems:"flex-start",padding:"11px 0",borderBottom:`1px solid ${T.divider}`}}>
+          <div onClick={()=>onToggle(task.id,!task.completed)} style={{cursor:"pointer",flexShrink:0,marginTop:2}}>
+            {task.completed?<div style={{width:22,height:22,borderRadius:"50%",background:color,display:"flex",alignItems:"center",justifyContent:"center"}}><svg width="11" height="11" viewBox="0 0 14 14"><path d="M2 7l4 4 6-6" stroke={T.dark?"#09090b":"#fff"} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg></div>:<div style={{width:22,height:22,borderRadius:"50%",border:`2px solid ${T.veryDim}`}}/>}
+          </div>
+          <span onClick={()=>onToggle(task.id,!task.completed)} style={{flex:1,fontFamily:"'Jost',sans-serif",fontSize:14,color:task.completed?T.dim:T.textSub,lineHeight:1.55,cursor:"pointer",textDecoration:task.completed?"line-through":"none",transition:"all 0.2s"}}>{task.text}</span>
+          <button onClick={()=>onDelete(task.id)} style={{background:"none",border:"none",cursor:"pointer",color:T.veryDim,fontSize:13,padding:"0 0 0 4px",flexShrink:0}}>✕</button>
+        </div>))}
+      </div>
+    </div>
+  </div>);
+}
+
+function AddTaskSheet({T,onAdd,onClose}){
+  const[visible,setVisible]=useState(false);
+  const[text,setText]=useState("");
+  const[selectedQ,setSelectedQ]=useState(2);
+  const[sessionTasks,setSessionTasks]=useState([]);
+  const inputRef=useRef(null);
+  useEffect(()=>{requestAnimationFrame(()=>requestAnimationFrame(()=>setVisible(true)));return()=>{};}, []);
+  const handleClose=()=>{setVisible(false);setTimeout(onClose,320);};
+  const handleAdd=async()=>{
+    if(!text.trim())return;
+    const task={text:text.trim(),quadrant:selectedQ,id:`temp_${Date.now()}`};
+    setSessionTasks(prev=>[...prev,task]);
+    await onAdd(text.trim(),selectedQ);
+    setText("");
+    setTimeout(()=>inputRef.current?.focus(),50);
+  };
+  const color=QUADS.find(q=>q.q===selectedQ)?.color||"#f59e0b";
+  return(<div style={{position:"fixed",inset:0,zIndex:110,display:"flex",alignItems:"flex-end"}}>
+    <div onClick={handleClose} style={{position:"absolute",inset:0,background:`rgba(0,0,0,${visible?0.65:0})`,transition:"background 0.32s"}}/>
+    <div style={{position:"relative",width:"100%",zIndex:1,background:T.sheetBg,borderRadius:"22px 22px 0 0",maxWidth:480,margin:"0 auto",maxHeight:"88vh",overflowY:"auto",transform:visible?"translateY(0)":"translateY(100%)",transition:"transform 0.35s cubic-bezier(0.4,0,0.2,1)",paddingBottom:"calc(env(safe-area-inset-bottom,0px) + 16px)",boxShadow:"0 -8px 40px rgba(0,0,0,0.4)"}}>
+      <div style={{display:"flex",justifyContent:"center",padding:"12px 0"}}><div style={{width:36,height:4,borderRadius:2,background:T.veryDim}}/></div>
+      <div style={{padding:"0 20px 20px"}}>
+        <h2 style={{fontFamily:"'Cormorant Garamond',serif",fontSize:24,fontWeight:700,color:T.text,margin:"0 0 16px"}}>Add Tasks</h2>
+
+        {/* Quadrant selector */}
+        <div style={{fontFamily:"'Jost',sans-serif",fontSize:11,color:T.dim,marginBottom:8,textTransform:"uppercase",letterSpacing:"0.07em"}}>Assign to quadrant</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:16}}>
+          {QUADS.map(({q,label,sub,color:c})=>(<button key={q} onClick={()=>setSelectedQ(q)} style={{padding:"10px 10px",borderRadius:10,background:selectedQ===q?c+"22":"none",border:`2px solid ${selectedQ===q?c:T.border}`,cursor:"pointer",textAlign:"left",transition:"all 0.2s"}}><div style={{display:"flex",alignItems:"center",gap:6,marginBottom:2}}><div style={{width:7,height:7,borderRadius:"50%",background:c,flexShrink:0}}/><span style={{fontFamily:"'Jost',sans-serif",fontSize:12,fontWeight:700,color:selectedQ===q?c:T.textSub}}>Q{q} · {label}</span></div><div style={{fontFamily:"'Jost',sans-serif",fontSize:10,color:T.dim,paddingLeft:13}}>{sub}</div></button>))}
+        </div>
+
+        {/* Tasks added this session */}
+        {sessionTasks.length>0&&(<div style={{marginBottom:14}}>
+          <div style={{fontFamily:"'Jost',sans-serif",fontSize:11,color:T.dim,marginBottom:8,textTransform:"uppercase",letterSpacing:"0.07em"}}>Added this session</div>
+          <div style={{background:T.cardInner,borderRadius:12,overflow:"hidden"}}>
+            {sessionTasks.map((t,i)=>{const qc=QUADS.find(q=>q.q===t.quadrant)?.color||"#888";return(<div key={t.id} style={{display:"flex",gap:10,alignItems:"center",padding:"10px 12px",borderBottom:i<sessionTasks.length-1?`1px solid ${T.divider}`:"none"}}>
+              <div style={{width:8,height:8,borderRadius:"50%",background:qc,flexShrink:0}}/>
+              <span style={{flex:1,fontFamily:"'Jost',sans-serif",fontSize:13,color:T.textSub,lineHeight:1.4}}>{t.text}</span>
+              <span style={{fontFamily:"'Jost',sans-serif",fontSize:9,fontWeight:700,background:qc+"22",color:qc,padding:"2px 6px",borderRadius:20,flexShrink:0}}>Q{t.quadrant}</span>
+            </div>);})}
+          </div>
+        </div>)}
+
+        {/* Input */}
+        <div style={{fontFamily:"'Jost',sans-serif",fontSize:11,color:T.dim,marginBottom:8,textTransform:"uppercase",letterSpacing:"0.07em"}}>Task description</div>
+        <input ref={inputRef} value={text} onChange={e=>setText(e.target.value)} placeholder="Describe the task..." autoFocus onKeyDown={e=>e.key==="Enter"&&handleAdd()}
+          style={{display:"block",width:"100%",padding:"12px 14px",background:T.cardInner,border:`1px solid ${text.trim()?color:T.border}`,borderRadius:12,fontFamily:"'Jost',sans-serif",fontSize:15,color:T.text,outline:"none",boxSizing:"border-box",marginBottom:10,transition:"border-color 0.2s"}}/>
+
+        <button onClick={handleAdd} disabled={!text.trim()} style={{width:"100%",padding:"13px",borderRadius:12,background:text.trim()?color:T.veryDim,border:"none",cursor:text.trim()?"pointer":"not-allowed",fontFamily:"'Jost',sans-serif",fontSize:14,fontWeight:600,color:"#09090b",marginBottom:10,transition:"background 0.2s"}}>
+          ＋ Add Task
+        </button>
+
+        <button onClick={handleClose} style={{width:"100%",padding:"13px",borderRadius:12,background:"none",border:`1px solid ${T.border}`,fontFamily:"'Jost',sans-serif",fontSize:15,fontWeight:600,color:T.text,cursor:"pointer"}}>
+          Done{sessionTasks.length>0?` (${sessionTasks.length} added)`:""}
+        </button>
+      </div>
+    </div>
+  </div>);
+}
+
 function MatrixPage({onBack,T,matrixTasks,onAdd,onToggle,onDelete}){
-  const[addingTo,setAddingTo]=useState(null),[newTask,setNewTask]=useState(""),[showCompleted,setShowCompleted]=useState(false);
-  const handleAdd=async(q)=>{if(!newTask.trim())return;await onAdd(newTask.trim(),q);setNewTask("");setAddingTo(null);};
+  const[activeQuad,setActiveQuad]=useState(null);
+  const[showAddTask,setShowAddTask]=useState(false);
+  const incompleteTasks=matrixTasks.filter(t=>!t.completed).sort((a,b)=>a.quadrant-b.quadrant);
+  const completedTasks=matrixTasks.filter(t=>t.completed);
   return(<div style={{minHeight:"100vh",background:T.bg,transition:"background 0.3s"}}>
     <PageHeader title="Time Matrix" onBack={onBack} T={T}/>
-    <div style={{padding:"16px 16px 100px",maxWidth:480,margin:"0 auto"}}>
-      <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,padding:"14px 16px",marginBottom:20}}>
-        <div style={{fontFamily:"'Jost',sans-serif",fontSize:13,color:T.muted,lineHeight:1.6}}>Focus on <span style={{color:"#34d399",fontWeight:600}}>Q2 — important, not urgent</span>. That's where growth lives. Q1 is firefighting. Q3 and Q4 steal your time.</div>
+    <div style={{padding:"16px 16px 120px",maxWidth:480,margin:"0 auto"}}>
+      <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:"12px 14px",marginBottom:16}}><div style={{fontFamily:"'Jost',sans-serif",fontSize:13,color:T.muted,lineHeight:1.6}}>Focus on <span style={{color:"#34d399",fontWeight:600}}>Q2 — important, not urgent</span>. That's where growth lives. Tap any quadrant to manage its tasks.</div></div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:20}}>
+        {QUADS.map(({q,label,sub,color})=>{
+          const qTasks=matrixTasks.filter(t=>t.quadrant===q);const pending=qTasks.filter(t=>!t.completed).length;const total=qTasks.length;const pct=total>0?Math.round((qTasks.filter(t=>t.completed).length/total)*100):0;
+          return(<div key={q} onClick={()=>setActiveQuad(q)} style={{background:T.card,border:`2px solid ${color}44`,borderRadius:16,padding:"16px 14px",cursor:"pointer",position:"relative",overflow:"hidden",transition:"border-color 0.2s,transform 0.15s",WebkitTapHighlightColor:"transparent",minHeight:120}} onTouchStart={e=>e.currentTarget.style.transform="scale(0.97)"} onTouchEnd={e=>e.currentTarget.style.transform="scale(1)"}>
+            <div style={{position:"absolute",top:0,left:0,right:0,height:4,background:color,borderRadius:"16px 16px 0 0"}}/>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8,marginTop:4}}><span style={{fontFamily:"'Jost',sans-serif",fontSize:10,fontWeight:700,background:color+"22",color,padding:"2px 7px",borderRadius:20,textTransform:"uppercase",letterSpacing:"0.06em"}}>Q{q}</span><span style={{fontFamily:"'Cormorant Garamond',serif",fontSize:28,fontWeight:700,color,lineHeight:1}}>{pending}</span></div>
+            <div style={{fontFamily:"'Jost',sans-serif",fontSize:13,fontWeight:700,color:T.text,marginBottom:2}}>{label}</div>
+            <div style={{fontFamily:"'Jost',sans-serif",fontSize:10,color:T.dim,marginBottom:10,lineHeight:1.3}}>{sub}</div>
+            <div style={{height:3,background:T.divider,borderRadius:2,overflow:"hidden"}}><div style={{height:"100%",width:`${pct}%`,background:color,borderRadius:2,transition:"width 0.4s ease"}}/></div>
+            <div style={{fontFamily:"'Jost',sans-serif",fontSize:9,color:T.dim,marginTop:4}}>{total===0?"No tasks":`${total-pending}/${total} done`}</div>
+          </div>);
+        })}
       </div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr 1fr",gap:6,marginBottom:20}}>
-        {QUADS.map(({q,label,color})=>{const tot=matrixTasks.filter(t=>t.quadrant===q).length;const done=matrixTasks.filter(t=>t.quadrant===q&&t.completed).length;return(<div key={q} style={{background:T.card,border:`1px solid ${color}44`,borderRadius:12,padding:"10px 8px",textAlign:"center"}}><div style={{fontFamily:"'Jost',sans-serif",fontSize:9,color,fontWeight:700,marginBottom:4,textTransform:"uppercase"}}>Q{q}</div><div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:22,fontWeight:700,color:T.text,lineHeight:1}}>{done}/{tot}</div><div style={{fontFamily:"'Jost',sans-serif",fontSize:9,color:T.dim,marginTop:2}}>{label}</div></div>);})}
-      </div>
-      <button onClick={()=>setShowCompleted(!showCompleted)} style={{background:"none",border:"none",cursor:"pointer",fontFamily:"'Jost',sans-serif",fontSize:12,color:T.dim,marginBottom:16,display:"flex",alignItems:"center",gap:4}}>{showCompleted?"Hide":"Show"} completed tasks</button>
-      {QUADS.map(({q,label,sub,color})=>{
-        const tasks=matrixTasks.filter(t=>t.quadrant===q&&(showCompleted?true:!t.completed));
-        const pending=matrixTasks.filter(t=>t.quadrant===q&&!t.completed).length;
-        return(<div key={q} style={{background:T.card,border:`1px solid ${color}44`,borderRadius:14,marginBottom:14,overflow:"hidden"}}>
-          <div style={{background:color+"18",padding:"12px 14px",borderBottom:`1px solid ${color}33`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-            <div><div style={{display:"flex",alignItems:"center",gap:8}}><div style={{width:8,height:8,borderRadius:"50%",background:color,flexShrink:0}}/><span style={{fontFamily:"'Jost',sans-serif",fontSize:14,fontWeight:700,color}}>{label}</span><span style={{fontFamily:"'Jost',sans-serif",fontSize:10,background:color+"22",color,padding:"2px 7px",borderRadius:20,fontWeight:600}}>Q{q}</span></div><div style={{fontFamily:"'Jost',sans-serif",fontSize:11,color:T.dim,marginTop:2,paddingLeft:16}}>{sub}</div></div>
-            {pending>0&&<div style={{fontFamily:"'Jost',sans-serif",fontSize:11,color,fontWeight:600}}>{pending} pending</div>}
-          </div>
-          <div style={{padding:"4px 0"}}>
-            {tasks.length===0&&addingTo!==q&&<div style={{padding:"12px 14px",fontFamily:"'Jost',sans-serif",fontSize:13,color:T.veryDim,fontStyle:"italic"}}>No tasks here.</div>}
-            {tasks.map(task=>(<div key={task.id} style={{display:"flex",gap:10,alignItems:"flex-start",padding:"10px 14px",borderBottom:`1px solid ${T.divider}`}}>
-              <div onClick={()=>onToggle(task.id,!task.completed)} style={{cursor:"pointer",flexShrink:0,marginTop:1}}>{task.completed?<div style={{width:22,height:22,borderRadius:"50%",background:color,display:"flex",alignItems:"center",justifyContent:"center"}}><svg width="11" height="11" viewBox="0 0 14 14"><path d="M2 7l4 4 6-6" stroke={T.dark?"#09090b":"#fff"} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg></div>:<div style={{width:22,height:22,borderRadius:"50%",border:`2px solid ${T.veryDim}`}}/>}</div>
-              <span style={{flex:1,fontFamily:"'Jost',sans-serif",fontSize:14,color:task.completed?T.dim:T.textSub,lineHeight:1.5,textDecoration:task.completed?"line-through":"none"}}>{task.text}</span>
-              <button onClick={()=>onDelete(task.id)} style={{background:"none",border:"none",cursor:"pointer",color:T.veryDim,fontSize:13,padding:"0 0 0 4px",flexShrink:0}}>✕</button>
-            </div>))}
-            {addingTo===q?(<div style={{padding:"10px 14px"}}><input value={newTask} onChange={e=>setNewTask(e.target.value)} placeholder="Describe the task..." autoFocus onKeyDown={e=>e.key==="Enter"&&handleAdd(q)} style={{display:"block",width:"100%",padding:"10px 12px",background:T.cardInner,border:`1px solid ${color}66`,borderRadius:10,fontFamily:"'Jost',sans-serif",fontSize:14,color:T.text,outline:"none",boxSizing:"border-box",marginBottom:8}}/><div style={{display:"flex",gap:8}}><button onClick={()=>handleAdd(q)} style={{background:color,border:"none",borderRadius:8,padding:"7px 16px",fontFamily:"'Jost',sans-serif",fontSize:13,fontWeight:600,color:T.dark?"#09090b":"#fff",cursor:"pointer"}}>Add</button><button onClick={()=>{setAddingTo(null);setNewTask("");}} style={{background:"none",border:`1px solid ${T.border}`,borderRadius:8,padding:"7px 12px",fontFamily:"'Jost',sans-serif",fontSize:13,color:T.dim,cursor:"pointer"}}>Cancel</button></div></div>)
-            :(<button onClick={()=>{setAddingTo(q);setNewTask("");}} style={{width:"100%",background:"none",border:"none",cursor:"pointer",padding:"10px 14px",display:"flex",alignItems:"center",gap:6,fontFamily:"'Jost',sans-serif",fontSize:13,color:T.dim}}><span style={{color,fontWeight:700,fontSize:15}}>+</span> Add task to Q{q}</button>)}
-          </div>
-        </div>);
-      })}
+      <button onClick={()=>setShowAddTask(true)} style={{width:"100%",padding:"14px",borderRadius:14,background:"#f59e0b",border:"none",cursor:"pointer",fontFamily:"'Jost',sans-serif",fontSize:15,fontWeight:700,color:"#09090b",marginBottom:24,display:"flex",alignItems:"center",justifyContent:"center",gap:8,boxShadow:"0 4px 16px rgba(245,158,11,0.3)"}}>
+        <span style={{fontSize:20,lineHeight:1}}>＋</span> Add New Task
+      </button>
+      {incompleteTasks.length>0&&(<>
+        <div style={{fontFamily:"'Jost',sans-serif",fontSize:12,fontWeight:600,color:T.dim,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:10}}>Priority List</div>
+        <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,overflow:"hidden",marginBottom:14}}>
+          {incompleteTasks.map((task,i)=>{const quad=QUADS.find(q=>q.q===task.quadrant);return(<div key={task.id} style={{display:"flex",gap:12,alignItems:"center",padding:"13px 14px",borderBottom:i<incompleteTasks.length-1?`1px solid ${T.divider}`:"none"}}>
+            <div onClick={()=>onToggle(task.id,true)} style={{cursor:"pointer",flexShrink:0}}><div style={{width:22,height:22,borderRadius:"50%",border:`2px solid ${quad?.color||T.veryDim}`}}/></div>
+            <span style={{flex:1,fontFamily:"'Jost',sans-serif",fontSize:14,color:T.textSub,lineHeight:1.4}}>{task.text}</span>
+            <span style={{fontFamily:"'Jost',sans-serif",fontSize:10,fontWeight:700,background:(quad?.color||"#888")+"22",color:quad?.color||T.dim,padding:"2px 7px",borderRadius:20,flexShrink:0}}>Q{task.quadrant}</span>
+          </div>);})}
+        </div>
+      </>)}
+      {completedTasks.length>0&&(<>
+        <div style={{fontFamily:"'Jost',sans-serif",fontSize:12,fontWeight:600,color:T.dim,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:10}}>Completed</div>
+        <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:14,overflow:"hidden"}}>
+          {completedTasks.slice(0,10).map((task,i)=>{const quad=QUADS.find(q=>q.q===task.quadrant);return(<div key={task.id} style={{display:"flex",gap:12,alignItems:"center",padding:"11px 14px",borderBottom:i<Math.min(completedTasks.length,10)-1?`1px solid ${T.divider}`:"none",opacity:0.6}}>
+            <div onClick={()=>onToggle(task.id,false)} style={{cursor:"pointer",flexShrink:0}}><div style={{width:22,height:22,borderRadius:"50%",background:quad?.color||T.veryDim,display:"flex",alignItems:"center",justifyContent:"center"}}><svg width="11" height="11" viewBox="0 0 14 14"><path d="M2 7l4 4 6-6" stroke={T.dark?"#09090b":"#fff"} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg></div></div>
+            <span style={{flex:1,fontFamily:"'Jost',sans-serif",fontSize:13,color:T.dim,textDecoration:"line-through",lineHeight:1.4}}>{task.text}</span>
+            <button onClick={()=>onDelete(task.id)} style={{background:"none",border:"none",cursor:"pointer",color:T.veryDim,fontSize:12,padding:"0 0 0 4px",flexShrink:0}}>✕</button>
+          </div>);})}
+        </div>
+      </>)}
+      {matrixTasks.length===0&&(<div style={{textAlign:"center",padding:"40px 20px"}}><div style={{fontSize:40,marginBottom:12}}>⊞</div><div style={{fontFamily:"'Cormorant Garamond',serif",fontSize:22,fontWeight:700,color:T.text,marginBottom:8}}>Your matrix is empty</div><div style={{fontFamily:"'Jost',sans-serif",fontSize:14,color:T.dim,lineHeight:1.6}}>Add your first task and assign it to a quadrant.</div></div>)}
     </div>
+    {activeQuad&&<QuadrantSheet quad={QUADS.find(q=>q.q===activeQuad)} tasks={matrixTasks.filter(t=>t.quadrant===activeQuad)} T={T} onToggle={onToggle} onDelete={onDelete} onClose={()=>setActiveQuad(null)}/>}
+    {showAddTask&&<AddTaskSheet T={T} onAdd={onAdd} onClose={()=>setShowAddTask(false)}/>}
+    <FloatingHomeBtn onPress={onBack}/>
   </div>);
 }
 
@@ -517,7 +641,7 @@ export default function App(){
     {!onboarded&&<Onboarding onDone={handleOnboardingDone}/>}
     {showPaywall&&<Paywall onClose={()=>setShowPaywall(false)} onActivate={handleActivatePro} T={T} userId={user?.id}/>}
     {menuOpen&&<SideMenu onNavigate={setPage} onClose={()=>setMenuOpen(false)} T={T} isPro={isPro}/>}
-    {page==="daily"&&(<><TopBar greeting={displayGreeting} date={date} onMenuOpen={()=>setMenuOpen(true)} T={T} saved={saved}/><DailyTab habits={habits} notes={notes} T={T} isPro={isPro} customSubs={customSubs} customActions={customActions} viewMode={viewMode} missionStatement={missionStatement} onToggle={id=>setHabits(p=>({...p,[id]:!p[id]}))} onNote={(id,v)=>setNotes(p=>({...p,[id]:v}))} onUpdateCustomSub={handleUpdateCustomSub} onAddAction={handleAddAction} onDeleteAction={handleDeleteAction} onRequirePro={requirePro}/><FloatingHistoryBtn onPress={()=>setPage("history")}/></>)}
+    {page==="daily"&&(<><TopBar greeting={displayGreeting} date={date} onMenuOpen={()=>setMenuOpen(true)} T={T} saved={saved}/><DailyTab habits={habits} notes={notes} T={T} isPro={isPro} customSubs={customSubs} customActions={customActions} viewMode={viewMode} missionStatement={missionStatement} onGoToMission={()=>setPage("mission")} onToggle={id=>setHabits(p=>({...p,[id]:!p[id]}))} onNote={(id,v)=>setNotes(p=>({...p,[id]:v}))} onUpdateCustomSub={handleUpdateCustomSub} onAddAction={handleAddAction} onDeleteAction={handleDeleteAction} onRequirePro={requirePro}/><SpeedDialFAB onHistory={()=>setPage("history")} onMatrix={()=>setPage("matrix")}/></>)}
     {page==="history"&&<HistoryPage onBack={()=>setPage("daily")} onGoToMatrix={()=>setPage("matrix")} logs={logs} T={T} isPro={isPro} onRequirePro={requirePro} userEmail={user?.email} matrixTasks={matrixTasks}/>}
     {page==="matrix"&&<MatrixPage onBack={()=>setPage("daily")} T={T} matrixTasks={matrixTasks} onAdd={handleAddMatrixTask} onToggle={handleToggleMatrixTask} onDelete={handleDeleteMatrixTask}/>}
     {page==="settings"&&<SettingsPage onBack={()=>setPage("daily")} T={T} dark={dark} onToggleTheme={toggleTheme} user={user} onSignOut={handleSignOut} settings={settings} onSave={saveSettings} viewMode={viewMode} onSetViewMode={handleSetViewMode} userName={userName} onSaveName={handleSaveName}/>}
