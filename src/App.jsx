@@ -624,7 +624,7 @@ export default function App(){
   const handleSetViewMode=(m)=>{setViewMode(m);localStorage.setItem("viewMode",m);};
   const handleSaveMission=async(statement,answers)=>{setMissionStatement(statement);setMissionAnswers(answers);if(user)await updateProfile(user.id,{mission_statement:statement,mission_answers:answers});};
   const handleAddMissionReflection=async(reflection)=>{const updated=[reflection,...missionReflections].slice(0,52);setMissionReflections(updated);if(user)await updateProfile(user.id,{mission_reflection:updated});};
-  const handleSignOut=async()=>{await supabase.auth.signOut();localStorage.removeItem(`log:${localKey()}`);setHabits({});setNotes({});setLogs({});setIsPro(false);setCustomSubs({});setCustomActions({});setUserName("");setGreeting("");setMatrixTasks([]);setMissionStatement("");setMissionAnswers({});setMissionReflections([]);};
+  const handleSignOut=async()=>{await supabase.auth.signOut();localStorage.removeItem(`log:${localKey()}`);setReady(false);setHabits({});setNotes({});setLogs({});setIsPro(false);setCustomSubs({});setCustomActions({});setUserName("");setGreeting("");setMatrixTasks([]);setMissionStatement("");setMissionAnswers({});setMissionReflections([]);};
   const handleOnboardingDone=async(name)=>{localStorage.setItem("onboarded","true");setOnboarded(true);if(name&&user){await updateProfile(user.id,{name});setUserName(name);setGreeting(getGreeting(name,new Date().getHours()));}};
   const handleSaveName=async(name)=>{setUserName(name);setGreeting(getGreeting(name,new Date().getHours()));if(user)await updateProfile(user.id,{name});};
   const requirePro=()=>setShowPaywall(true);
