@@ -3,8 +3,9 @@
   <h1>7 Habits Tracker</h1>
   <p><strong>Turn timeless principles into a daily practice you can measure.</strong></p>
   <p>A mobile-first habit tracker inspired by Stephen R. Covey's <em>The 7 Habits of Highly Effective People</em>.</p>
-  <p><a href="https://github.com/Toqh/seven-habits">View Repository</a></p>
+  <p><a href="https://github.com/Toqh/seven-habits">View Repository</a></p> <p><a href="sevenhabits.space">sevenhabits.space</a></p>
 </div>
+
 
 About the app
 
